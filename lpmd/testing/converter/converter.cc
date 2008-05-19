@@ -164,18 +164,21 @@ void Converter::Process()
 void Converter::Finish()
 {
  //
- // This loads the output (cell writer) module: 
+ // This loads the output (cell writer) modules
  //
  CommonInputReader & param = GetInputReader();
- if (! param.Defined("output-module")) EndWithError("No CellWriter plugin was assigned. Maybe you forgot an \"output\" statement?");
-
- pluginman.LoadPlugin(param["output-module"], param["output-moduleargs"]);
- pluginman[param["output-module"]].SetUsed();
-
- CellWriter & cwrite = CastModule<CellWriter>(pluginman[param["output-module"]]);
- if (Verbose()) std::cerr << "-> Writing output file: " << param["output-file"] << '\n';
- cwrite.WriteMany(param["output-file"], configs); 
- pluginman.UnloadPlugin(param["output-module"]);
+ if (param.outputlist.size() == 0) EndWithError("No CellWriter plugin was assigned. Maybe you forgot an \"output\" statement?");
+ // Carga los modulos para escritura 
+ for (std::list<ModuleInfo>::const_iterator it=param.outputlist.begin();it != param.outputlist.end();++it)
+ {
+  const ModuleInfo & minf = *it;
+  pluginman.LoadPlugin(minf.name, minf.id, minf.args);
+  pluginman[minf.id].SetUsed();
+  CellWriter & cwrite = CastModule<CellWriter>(pluginman[minf.id]);
+  if (Verbose()) std::cerr << "-> Writing output file: " << cwrite.GetFile() << '\n';
+  cwrite.WriteMany(cwrite.GetFile(), configs); 
+  pluginman.UnloadPlugin(minf.id);
+ }
 }
 
 //

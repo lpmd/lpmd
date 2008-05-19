@@ -114,7 +114,7 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
     while (words.size() > 0) param["use-args"] = param["use-args"] + GetNextWord() + " ";
    }
   }
-  else if ((name == "input") || (name == "output"))
+  else if (name == "input")
   {
    std::list<std::string> tmpwords = words;
    std::string validkws = "module ";
@@ -124,7 +124,7 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
    std::string keyw = ParseCommandArguments(name, validkws+pluginkws);
    param[name+"-moduleargs"] = keyw;
   }
-  else if (name == "prepare")
+  else if ((name == "prepare") || (name == "output"))
   {
    std::list<std::string> tmpwords = words;
    std::string validkws = "module ";
@@ -134,9 +134,12 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
    std::string keyw = ParseCommandArguments(name, validkws+pluginkws);
    param[name+"-moduleargs"] = keyw;
    std::ostringstream ostr;
-   ostr << preparelist.size();
-   ModuleInfo minf(param[name+"-module"], "prepare"+ostr.str(), param[name+"-moduleargs"]);
-   preparelist.push_back(minf);
+   std::list<ModuleInfo> * taglist;
+   if (name == "prepare") taglist = &preparelist;
+   else taglist = &outputlist;
+   ostr << taglist->size();
+   ModuleInfo minf(param[name+"-module"], name+ostr.str(), param[name+"-moduleargs"]);
+   taglist->push_back(minf);
   }
   else return 1; // Unexpected statement
  }

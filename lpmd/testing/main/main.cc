@@ -364,20 +364,30 @@ void Simulator::Process()
  std::cout << "           steps = " << nsteps << std::endl;
 
  SimulationCell & sc = GetCell();
-
- CellWriter * cf = NULL;
- std::ofstream * outfile = NULL;
- if (param.Defined("output-module"))
+ 
+ CellWriter ** cf = NULL;
+ std::ofstream ** outfile = NULL;
+ BannerPrint("WRITING INFORMATION");
+ if (param.outputlist.size() > 0)
  {
-  // Carga Modulo para escritura, modulo no se descarga.
-  pluginman.LoadPlugin(param["output-module"], param["output-moduleargs"]);
-  BannerPrint("WRITING INFORMATION");
-  pluginman[param["output-module"]].SetUsed();
-  pluginman[param["output-module"]].Show(std::cout);
-  cf = dynamic_cast<CellWriter *>(&(pluginman[param["output-module"]])); //FIXME: que hacer aqui?
-  outfile = new std::ofstream((cf->GetFile()).c_str(), std::ios::out);
-  cf->WriteHeader(*outfile);
+  cf = new CellWriter*[param.outputlist.size()];
+  outfile = new std::ofstream*[param.outputlist.size()];
+  // Carga los modulos para escritura 
+  int q = 0;
+  for (std::list<ModuleInfo>::const_iterator it=param.outputlist.begin();it != param.outputlist.end();++it)
+  {
+   const ModuleInfo & minf = *it;
+   pluginman.LoadPlugin(minf.name, minf.id, minf.args);
+   pluginman[minf.id].SetUsed();
+   pluginman[minf.id].Show(std::cout);
+   std::cout << '\n';
+   cf[q] = dynamic_cast<CellWriter *>(&(pluginman[minf.id])); //FIXME: que hacer aqui?
+   outfile[q] = new std::ofstream((cf[q]->GetFile()).c_str(), std::ios::out);
+   cf[q]->WriteHeader(*(outfile[q]));
+   q++;
+  }
  }
+ else std::cout << "  No output modules were selected." << '\n' << '\n';
 
  std::ostream * mout = &(std::cout);
  if (param["monitor-output"] != "") mout = new std::ofstream(param["monitor-output"].c_str(), std::ios::out);
@@ -434,9 +444,9 @@ void Simulator::Process()
 
   if (step % param.GetInteger("dumping-each") == 0) Dump(param.GetString("dumping-dumpfile")); 
 
-  // Approach de como seria la escritura utilizando la parte modular.
-  if ((cf != NULL) && (step % cf->GetInterval() == 0)) cf->WriteCell(*outfile, sc);
-
+  // Escribe la configuracion con cada modulo llamado en 'output'
+  for (int q=0;q<param.outputlist.size();++q)
+      if (step % cf[q]->GetInterval() == 0) cf[q]->WriteCell(*(outfile[q]), sc);
 
   // Check the list of system modifiers to see which we must apply now 
   for (std::vector<SystemModifier *>::iterator it=modiflist.begin();it!=modiflist.end();++it)
@@ -482,7 +492,8 @@ void Simulator::Process()
   if (MustDo(step, param.GetInteger("monitor-start"), param.GetInteger("monitor-end"), param.GetInteger("monitor-each"))) Monitor(mout);
   DoStep();
  }
- if (outfile != NULL) delete outfile;
+ if (outfile != NULL) delete [] outfile;
+ if (cf != NULL) delete [] cf;
  if (param["monitor-output"] != "") delete mout;
 }
 

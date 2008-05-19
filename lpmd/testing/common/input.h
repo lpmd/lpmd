@@ -26,6 +26,7 @@ class CommonInputReader: public lpmd::InputFile
    //
    std::list<lpmd::ModuleInfo> uselist;
    std::list<lpmd::ModuleInfo> preparelist;
+   std::list<lpmd::ModuleInfo> outputlist;
 
  protected:
    const ParamList * ovpointer;
