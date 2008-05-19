@@ -150,9 +150,9 @@ void CommonHandler::ShowPluginHelp(std::string plugin)
  std::ostringstream str;
  str << "Show "<<plugin<<" Plugin Information.";
  BannerPrint(str.str());
- std::cout << '\n';
  PluginManager pm;
  pm.LoadPlugin(plugin, "tempmodule", "");
+ std::cout << "Loaded from file: " << pm["tempmodule"]["fullpath"] << '\n' << '\n';
  pm["tempmodule"].ShowHelp();
  BannerPrint("Provides");
  std::cout << "     >> " << pm["tempmodule"].Provides() << '\n';
