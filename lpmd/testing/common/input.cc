@@ -20,6 +20,7 @@ CommonInputReader::CommonInputReader(PluginManager & pm): ovpointer(NULL)
  DeclareStatement("use", "module as alias");
  DeclareStatement("plugindir", "dir");
  DeclareStatement("include", "inputfile");
+ DeclareStatement("cell cubic", "a scale");
  DeclareStatement("cell crystal", "a b c alpha beta gamma scale");
  DeclareStatement("cell vector", "ax ay az bx by bz cx cy cz scale");
  DeclareStatement("periodic", "x y z");

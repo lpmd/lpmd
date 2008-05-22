@@ -79,7 +79,14 @@ void CommonHandler::Initialize()
  Cell *cell = NULL;
  // Construye la celda de simulacion
  CommonInputReader & param = GetInputReader();
- if (param.Defined("cell-alpha") && param.Defined("cell-a"))
+ if (param.Defined("cell-a") && !param.Defined("cell-alpha"))
+ {
+  double a, scale;
+  scale = param.GetDouble("cell-scale");
+  a = param.GetDouble("cell-a")*scale;
+  cell = new Cell(a, a, a, 0.5*M_PI, 0.5*M_PI, 0.5*M_PI);
+ }
+ else if (param.Defined("cell-alpha") && param.Defined("cell-a"))
  {
   double a, b, c, alpha, beta, gamma, scale;
   scale = param.GetDouble("cell-scale");
