@@ -26,7 +26,7 @@ class Simulator: public CommonHandler
   void InitializeFromInput();
   void LoadAtomTypes();
   void ShowStartInfo();
-  void Monitor(std::ostream * mout);
+  void Monitor(MonitorApplyInfo & mon);
   void LoadUseModules();
   void LoadModules();
   void Process();

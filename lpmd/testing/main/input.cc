@@ -13,6 +13,11 @@ void LPMDInputReader::Read(std::string inpfile, const ParamList & optvars)
 {
  inside_typeblock = false;
  CommonInputReader::Read(inpfile, optvars);
+ // si no se definio 'monitor', se pone uno por defecto aqui
+ if (monapply.size() == 0)
+ {  
+  monapply.push_back(MonitorApplyInfo("kinetic-energy,potential-energy,total-energy", 0, GetInteger("steps-n"), 10, ""));
+ }
 }
 
 //
@@ -37,11 +42,11 @@ LPMDInputReader::LPMDInputReader(PluginManager & pm): CommonInputReader(pm)
  // Some default values
  ParamList & param = (*this);
 
+ param["monitor-start"] = "0";
+ param["monitor-end"] = "-1";
+ param["monitor-each"] = "10";
  param["showcoords"] = "true";
  param["showunused"] = "true";
- param["monitor-properties"] = "kinetic-energy,potential-energy,total-energy";
- param["monitor-each"] = "10";
- param["monitor-output"] = "";
  param["dumping-each"] = "10000";
  param["dumping-dumpfile"] = "restore.dump";
  param["restore-dumpfile"] = "";
@@ -65,6 +70,16 @@ int LPMDInputReader::OnStatement(const std::string & name, const std::string & k
    inside_typeblock = true;
    param["atom-"+param["type-name"]] = "";
    param["type-args"] = "";
+  }
+  else if (name == "monitor")
+  {
+   MonitorApplyInfo mon(param["monitor-properties"], param.GetInteger("monitor-start"), param.GetInteger("monitor-end"), param.GetInteger("monitor-each"), param["monitor-output"]);
+   monapply.push_back(mon);
+   param.Remove("monitor-properties");
+   param["monitor-start"] = "0";
+   param["monitor-end"] = "-1";
+   param["monitor-each"] = "10";
+   param.Remove("monitor-output");
   }
   else if (name == "atom")
   {

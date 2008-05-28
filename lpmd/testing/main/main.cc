@@ -92,22 +92,31 @@ void Simulator::LoadModules()
   propfiles[properties[i]] = new std::ofstream(pmod["output"].c_str(), std::ios::trunc);
   pmod.SetUsed();
  }
+
  BannerPrint("SIMULATION MONITOR INFORMATION");
- std::list<std::string> namedprops = ListOfTokens(param["monitor-properties"], ',');
- for (std::list<std::string>::const_iterator it=namedprops.begin();it!=namedprops.end();++it)
+ for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
  {
-  const std::string propname(*it);
-  Module & pmod = pluginman.Provider(propname);
-  std::cout << "  " << propname << " from module \"" << pmod.Name();
-  InstantProperty & ip = CastModule<InstantProperty>(pmod);
-  ip.start_step = param.GetInteger("monitor-start");
-  ip.end_step = param.GetInteger("monitor-end");
-  ip.interval = param.GetInteger("monitor-each");
-  std::cout << "\" (start=" << ip.start_step << ", end=" << ip.end_step << ", each=" << ip.interval << ")\n";
-  monitorlist.push_back(&ip);
-  pmod.SetUsed();
+  MonitorApplyInfo & mon = (*it);
+  if (mon.output == "") std::cout << "To standard output: \n";
+  else std::cout << "To file " << mon.output << ": \n";
+  std::list<std::string> namedprops = mon.properties;
+  for (std::list<std::string>::const_iterator it=namedprops.begin();it!=namedprops.end();++it)
+  {
+   const std::string propname(*it);
+   Module & pmod = pluginman.Provider(propname);
+   std::cout << "  -> " << propname << " from module \"" << pmod.Name();
+   InstantProperty & ip = CastModule<InstantProperty>(pmod);
+   if (mon.end_step == -1) mon.end_step = param.GetInteger("steps-n");
+   ip.start_step = mon.start_step;
+   ip.end_step = mon.end_step;
+   ip.interval = mon.interval;
+   std::cout << "\" (start=" << ip.start_step << ", end=" << ip.end_step << ", each=" << ip.interval << ")\n";
+   monitorlist.push_back(&ip);
+   pmod.SetUsed();
+  }
+  std::cout << '\n';
  }
- if (param["monitor-output"] != "") std::cout << "Monitor output redirected to " << param["monitor-output"] << '\n';
+
  std::vector<std::string> visualizers = SplitTextLine(param["visualize-list"]);
  for (unsigned int i=0;i<visualizers.size();++i)
  {
@@ -125,10 +134,6 @@ void Simulator::LoadModules()
 void Simulator::Initialize()
 {
  CommonInputReader & param = GetInputReader();
- //
- if (! param.Defined("monitor-start")) param.AssignParameter("monitor-start", "0");
- if (! param.Defined("monitor-end")) param.AssignParameter("monitor-end", param["steps-n"]);
- //
  if (param["restore-dumpfile"] == "") InitializeFromInput();
  else 
  {
@@ -389,8 +394,11 @@ void Simulator::Process()
  }
  else std::cout << "  No output modules were selected." << '\n' << '\n';
 
- std::ostream * mout = &(std::cout);
- if (param["monitor-output"] != "") mout = new std::ofstream(param["monitor-output"].c_str(), std::ios::out);
+ for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
+ {
+  MonitorApplyInfo & mon = (*it);
+  if (mon.output != "") mon.mout = new std::ofstream(mon.output.c_str(), std::ios::out);
+ }
 
  int initial_step;
  if (param["restore-dumpfile"] == "") 
@@ -403,10 +411,14 @@ void Simulator::Process()
   initial_step = step;
   BannerPrint("SIMULATION CONTINUED!");
  }
- (*mout) << "# step     ";
- std::list<std::string> namedprops = ListOfTokens(param["monitor-properties"], ',');
- for (std::list<std::string>::const_iterator it=namedprops.begin();it!=namedprops.end();++it) { *(mout) << std::setw(21) << *it; }
- (*mout) << "\n\n";
+
+ for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
+ {
+  MonitorApplyInfo & mon = (*it);
+  *(mon.mout) << "# step     ";
+  for (std::list<std::string>::const_iterator it=mon.properties.begin();it!=mon.properties.end();++it) { *(mon.mout) << std::setw(21) << *it; }
+  *(mon.mout) << "\n\n";
+ }
 
  //
  // MD Loop
@@ -489,15 +501,25 @@ void Simulator::Process()
    }
   }
 
-  if (MustDo(step, param.GetInteger("monitor-start"), param.GetInteger("monitor-end"), param.GetInteger("monitor-each"))) Monitor(mout);
+  for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
+  {
+   MonitorApplyInfo & mon = (*it);
+   //std::cerr << "DEBUG " << mon.start_step << ", " << mon.end_step << ", " << mon.interval << ", [" << mon.output << "]\n";
+   if (MustDo(step, mon.start_step, mon.end_step, mon.interval)) Monitor(mon);
+  }
   DoStep();
  }
  if (outfile != NULL) delete [] outfile;
  if (cf != NULL) delete [] cf;
- if (param["monitor-output"] != "") delete mout;
+ 
+ for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
+ {
+  MonitorApplyInfo & mon = (*it);
+  if (mon.output != "") delete mon.mout;
+ }
 }
 
-void Simulator::Monitor(std::ostream * mout)
+void Simulator::Monitor(MonitorApplyInfo & mon)
 {
  CommonInputReader & param = GetInputReader();
  SimulationCell & sc = GetCell();
@@ -509,20 +531,16 @@ void Simulator::Monitor(std::ostream * mout)
   (*it)->Evaluate(sc, p_array); 
  }
 
- if (param["monitor-output"] != "")
- {
-  std::cout << "Step " << step << " completed. Output being redirected to " << param["monitor-output"] << ".\n";
- }
- *(mout) << std::setw(10) << std::left << step;
+ *(mon.mout) << std::setw(10) << std::left << step;
  
- std::list<std::string> namedprops = ListOfTokens(param["monitor-properties"], ',');
- for (std::list<std::string>::const_iterator it=namedprops.begin();it!=namedprops.end();++it)
+ for (std::list<std::string>::const_iterator it=mon.properties.begin();it!=mon.properties.end();++it)
  {
   Module & pmod = pluginman.Provider(*it);
   double pvalue = pmod.GetProperty(*it);
-  (*mout) << std::setw(21) << pvalue;
+  *(mon.mout) << std::setw(21) << pvalue;
  }
- (*mout) << '\n';
+ *(mon.mout) << '\n';
+ mon.mout->flush();
 }
 
 void Simulator::Finish()
