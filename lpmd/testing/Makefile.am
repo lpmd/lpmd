@@ -1,3 +1,3 @@
 
-SUBDIRS = common main analyzer converter
+SUBDIRS = common main analyzer converter visualizer
 

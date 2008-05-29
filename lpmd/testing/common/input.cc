@@ -86,7 +86,7 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
   else if (name == "potential") 
      param["potential-list"] = param["potential-list"]+param["potential-a"]+"#"+param["potential-b"]+"#"+param["potential-module"]+" ";
   else if (name == "charge") param["charge-"+param["charge-symbol"]] = param["charge-charge"];
-  else if ((name == "property") || (name == "apply"))
+  else if (((name == "property") || (name == "apply")) || (name == "visualize"))
   {
    std::string tname = param[name+"-module"];
    param[tname+"-args"] = keywords;
