@@ -39,6 +39,7 @@ void Analyzer::LoadModules()
 {
  CommonHandler::LoadModules();
  CommonInputReader & param = GetInputReader();
+ param["property-list"] = param["special-list"] + param["property-list"];
  std::vector<std::string> properties = SplitTextLine(param["property-list"]);
  for (unsigned int i=0;i<properties.size();++i)
  {
@@ -76,6 +77,7 @@ void Analyzer::Initialize()
   CellReader & cread = CastModule<CellReader>(pluginman[param["input-module"]]);
   if (Verbose()) std::cerr << "-> Loading input file: " << param["input-file"] << '\n';
   configs.push_back(SimulationCell(*scell));
+  if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cread.ReadMany(param["input-file"], configs); 
  }
  catch (InvalidModuleType & e)
@@ -84,6 +86,7 @@ void Analyzer::Initialize()
   CellGenerator & cgen = CastModule<CellGenerator>(pluginman[param["input-module"]]);
   if (Verbose()) std::cerr << "-> Creating input configuration..." << '\n';
   configs.push_back(SimulationCell(*scell));
+  if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cgen.Generate(configs[0]);
   configs[0].NumEspec();
   configs[0].AssignIndex();

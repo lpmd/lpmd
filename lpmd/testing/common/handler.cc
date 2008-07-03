@@ -106,7 +106,11 @@ void CommonHandler::Initialize()
   Vector c(param.GetDouble("cell-cx")*scale, param.GetDouble("cell-cy")*scale, param.GetDouble("cell-cz")*scale);
   cell = new Cell(a, b, c);
  }
- else EndWithError("The dimensions of the simulation cell were not specified. Maybe you forgot a \"cell\" statement?"); 
+ else
+ {
+  if (param["replacecell"] == "true") cell = new Cell(1.0, 1.0, 1.0); 
+  else EndWithError("The dimensions of the simulation cell were not specified. Maybe you forgot a \"cell\" statement?"); 
+ }
 
  bool px, py, pz;
  px = param.GetBool("periodic-x");
@@ -118,7 +122,7 @@ void CommonHandler::Initialize()
  SetCell(*scell);
  delete cell;
 
- if (Verbose())
+ if (Verbose() && (! param.GetBool("replacecell")))
  {
   std::cerr << "Cell vectors: " << '\n';
   for (int k=0;k<3;++k) std::cerr << GetCell().GetVector(k) << '\n';
@@ -146,7 +150,7 @@ void CommonHandler::ShowHelp()
  std::cerr << "Using liblpmd version " << lpmd::LibraryVersion() << std::endl << std::endl;
  std::cerr << "Usage: " << cmdname << " [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]";
  std::cerr << " [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]";
- std::cerr << " [--option | -o <option=value,option=value,...>] <file.control>\n";
+ std::cerr << " [--option | -O <option=value,option=value,...>] <file.control>\n";
  std::cerr << "       " << cmdname << " [--pluginhelp | -p <pluginname>]\n";
  std::cerr << "       " << cmdname << " [--help | -h]\n";
  exit(1);
@@ -192,15 +196,50 @@ void CommonHandler::Execute(CommonCmdLineParser & clp)
  args.pop_front();
  if (args.size() == 1) { clp.AssignParameter("inputfile-file", args.front()); }
  SetVerbose(false);
- if (! clp.Defined("inputfile-file") && ! clp.Defined("pluginhelp")) clp.AssignParameter("help", "true");
  if (clp.Defined("pluginhelp")) ShowPluginHelp(clp["pluginhelp-file"]);
  if (clp.Defined("help")) ShowHelp();
  if (clp.Defined("verbose")) SetVerbose(true);
  ParamList optionvars;
  SetOptionVariables(clp, optionvars); 
  CommonInputReader & param = GetInputReader();
- if (Verbose()) std::cerr << "-> Reading input file: \"" << clp["inputfile-file"] << "\"\n";
- param.Read(clp["inputfile-file"], optionvars);
+ if (clp.Defined("input"))
+ {
+  std::string inpline = "input ";
+  std::vector<std::string> ospl = SplitTextLine(clp["input-options"], ':');
+  std::vector<std::string> args = SplitTextLine(ospl[1], ',');
+  inpline += (ospl[0]+" ");
+  for (unsigned int i=0;i<args.size();++i) inpline += (args[i]+" ");
+  param.ParseLine(inpline);
+ }
+ if (clp.Defined("output"))
+ {
+  std::string outline = "output ";
+  std::vector<std::string> ospl = SplitTextLine(clp["output-options"], ':');
+  std::vector<std::string> args = SplitTextLine(ospl[1], ',');
+  outline += (ospl[0]+" ");
+  for (unsigned int i=0;i<args.size();++i) outline += (args[i]+" ");
+  param.ParseLine(outline);
+ }
+ if (clp.Defined("use"))
+ {
+  std::vector<std::string> ospl = SplitTextLine(clp["use-options"], ':');
+  std::vector<std::string> args = SplitTextLine(ospl[1], ',');
+  std::string useargs = "";
+  for (unsigned int i=0;i<args.size();++i)
+  {
+   std::vector<std::string> tmp = SplitTextLine(args[i], '=');
+   useargs += (tmp[0]+" "+tmp[1]+" ");
+  }
+  ModuleInfo minf(ospl[0], ospl[0], useargs);
+  param.uselist.push_back(minf);
+  param["special-list"] = param["special-list"]+ospl[0]+" ";
+ }
+ if (clp["inputfile-file"] != "")
+ {
+  if (Verbose()) std::cerr << "-> Reading input file: \"" << clp["inputfile-file"] << "\"\n";
+  param.Read(clp["inputfile-file"], optionvars);
+ }
+ if (clp.Defined("replace-cell")) param["replacecell"] = "true";
  if (clp.Defined("vector"))
  {
   if (clp.Defined("lengths") || clp.Defined("angles")) 
@@ -218,15 +257,23 @@ void CommonHandler::Execute(CommonCmdLineParser & clp)
  }
  if (clp.Defined("lengths"))
  {
-  std::vector<std::string> ll = SplitTextLine(clp["lengths-a,b,c"], ',');
-  param.AssignParameter("cell-a", ll[0]);
-  param.AssignParameter("cell-b", ll[1]);
-  param.AssignParameter("cell-c", ll[2]);
   if (!clp.Defined("angles")) 
   {
    param.AssignParameter("cell-alpha", "90.0");
    param.AssignParameter("cell-beta", "90.0");
    param.AssignParameter("cell-gamma", "90.0");
+  }
+  std::vector<std::string> ll = SplitTextLine(clp["lengths-a,b,c"], ',');
+  param.AssignParameter("cell-a", ll[0]);
+  if (ll.size() > 1)
+  {
+   param.AssignParameter("cell-b", ll[1]);
+   param.AssignParameter("cell-c", ll[2]);
+  }
+  else
+  {
+   param.AssignParameter("cell-b", ll[0]);
+   param.AssignParameter("cell-c", ll[0]);
   }
  }
  if (clp.Defined("angles"))

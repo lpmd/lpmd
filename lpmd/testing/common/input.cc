@@ -35,11 +35,32 @@ CommonInputReader::CommonInputReader(PluginManager & pm): ovpointer(NULL)
  param["periodic-y"] = "true";
  param["periodic-z"] = "true";
  param["distancecache"] = "false";
+ param["replacecell"] = "false";
  param["property-list"] = "";
  param["apply-list"] = "";
+ param["special-list"] = "";
 }
 
 CommonInputReader::~CommonInputReader() { }
+
+
+//
+//
+//
+void CommonInputReader::ParseLine(std::string line)
+{
+ words = ListOfTokens(line);
+ std::string first_word = words.front();
+ std::string statement_args = MatchCommand(words);
+ if (statement_args == "") words.pop_front();
+ if (statement_args != "")
+ {
+  // Palabra clave de tipo regular, o no valida
+  std::string kvpairs = ParseCommandArguments(first_word, statement_args);
+  OnStatement(first_word, kvpairs, true);
+ }
+ else OnStatement(first_word, "", false);
+}
 
 //
 //
@@ -102,6 +123,7 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
    { 
     // Procesa el caso cuando se esta dentro de un bloque use / enduse
     ModuleInfo minf(param["use-module"], param["use-alias"], param["use-args"]);
+    std::cerr << "DEBUG " << param["use-args"] << '\n';
     uselist.push_back(minf);
     param.Remove("use-module");
     param.Remove("use-alias");

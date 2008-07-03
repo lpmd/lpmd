@@ -43,6 +43,7 @@ void Converter::LoadModules()
  //
  // Carga modulos SystemModifier
  // 
+ param["apply-list"] = param["special-list"] + param["apply-list"];
  std::vector<std::string> modifiers = SplitTextLine(param["apply-list"]);
  for (unsigned int i=0;i<modifiers.size();++i)
  {
@@ -67,6 +68,7 @@ void Converter::Initialize()
   CellReader & cread = CastModule<CellReader>(pluginman[param["input-module"]]);
   if (Verbose()) std::cerr << "-> Loading input file: " << param["input-file"] << '\n';
   configs.push_back(SimulationCell(*scell));
+  if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cread.ReadMany(param["input-file"], configs); 
  }
  catch (InvalidModuleType & e)
@@ -75,6 +77,7 @@ void Converter::Initialize()
   CellGenerator & cgen = CastModule<CellGenerator>(pluginman[param["input-module"]]);
   if (Verbose()) std::cerr << "-> Creating input configuration..." << '\n';
   configs.push_back(SimulationCell(*scell));
+  if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cgen.Generate(configs[0]);
  }
  if (Verbose()) 

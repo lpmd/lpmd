@@ -20,6 +20,7 @@ class CommonInputReader: public lpmd::InputFile
 
    virtual void Read(std::string sysfile, const ParamList & optvars);
    virtual int OnStatement(const std::string & name, const std::string & keywords, bool regular);
+   void ParseLine(std::string);
 
    int CheckConsistency();
 

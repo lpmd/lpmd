@@ -38,6 +38,7 @@ void VisualHandler::LoadModules()
  //
  // Carga modulos Visualizer
  // 
+ param["visualize-list"] = param["special-list"] + param["visualize-list"];
  std::vector<std::string> visualizers = SplitTextLine(param["visualize-list"]);
  for (unsigned int i=0;i<visualizers.size();++i)
  {
