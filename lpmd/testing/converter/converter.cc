@@ -115,7 +115,7 @@ void Converter::Process()
  
  for (unsigned long i=0;i<configs.size();++i)
  {
-  configs[i].SetCell(*scell);
+  if (param.GetString("replacecell") == "false") configs[i].SetCell(*scell);
   if (cm != NULL) configs[i].SetCellManager(*cm);
   configs[i].UseDistanceCache(param.GetBool("distancecache"));
   // Aplica los modulos de "prepare"
@@ -151,7 +151,7 @@ void Converter::Process()
  //
  for (unsigned long i=0;i<configs.size();++i)
  {
-  configs[i].SetCell(*scell);
+  if (param.GetString("replacecell") == "false") configs[i].SetCell(*scell);
   if (cm != NULL) configs[i].SetCellManager(*cm);
   configs[i].UseDistanceCache(param.GetBool("distancecache"));
   for (std::vector<SystemModifier *>::iterator it=smlist.begin();it!=smlist.end();++it)

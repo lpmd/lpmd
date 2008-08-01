@@ -504,7 +504,6 @@ void Simulator::Process()
   for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
   {
    MonitorApplyInfo & mon = (*it);
-   //std::cerr << "DEBUG " << mon.start_step << ", " << mon.end_step << ", " << mon.interval << ", [" << mon.output << "]\n";
    if (MustDo(step, mon.start_step, mon.end_step, mon.interval)) Monitor(mon);
   }
   DoStep();

@@ -123,7 +123,6 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
    { 
     // Procesa el caso cuando se esta dentro de un bloque use / enduse
     ModuleInfo minf(param["use-module"], param["use-alias"], param["use-args"]);
-    std::cerr << "DEBUG " << param["use-args"] << '\n';
     uselist.push_back(minf);
     param.Remove("use-module");
     param.Remove("use-alias");
