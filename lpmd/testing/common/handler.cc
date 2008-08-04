@@ -193,6 +193,7 @@ void CommonHandler::SetOptionVariables(CommonCmdLineParser & clp, ParamList & ov
 void CommonHandler::Execute(CommonCmdLineParser & clp)
 {
  std::list<std::string> args = clp.Arguments();
+ if (args.size() == 1) ShowHelp();
  args.pop_front();
  if (args.size() == 1) { clp.AssignParameter("inputfile-file", args.front()); }
  SetVerbose(false);
