@@ -44,6 +44,7 @@ void VisualHandler::LoadModules()
  {
   Module & pmod = pluginman[visualizers[i]];
   Visualizer & vis = CastModule<Visualizer>(pmod);
+  vis.interval = -1;
   vislist.push_back(&vis);
   pmod.SetUsed();
  }
@@ -101,6 +102,7 @@ void VisualHandler::Process()
   if (Verbose()) std::cerr << "-> Loading input file: " << param["input-file"] << '\n';
   std::ifstream is(param["input-file"].c_str());
   if (! is.good()) throw FileNotFound(param["input-file"]);
+  if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cread.ReadHeader(is);
   while (cread.ReadCell(is, *scell)) 
   {
@@ -115,6 +117,7 @@ void VisualHandler::Process()
   // Ahora prueba si es del tipo CellGenerator, se generara solo una configuracion
   CellGenerator & cgen = CastModule<CellGenerator>(pluginman[param["input-module"]]);
   if (Verbose()) std::cerr << "-> Creating input configuration..." << '\n';
+  if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cgen.Generate(*scell);
   scell->NumEspec();
   scell->AssignIndex();
