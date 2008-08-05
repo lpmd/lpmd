@@ -150,7 +150,8 @@ void CommonHandler::ShowHelp()
  std::cerr << "Using liblpmd version " << lpmd::LibraryVersion() << std::endl << std::endl;
  std::cerr << "Usage: " << cmdname << " [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]";
  std::cerr << " [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]";
- std::cerr << " [--option | -O <option=value,option=value,...>] <file.control>\n";
+ std::cerr << " [--option | -O <option=value,option=value,...>] [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]";
+ std::cerr << " [--use | -u plugin:opt1,opt2,...] [--replace-cell | -r] [file.control]\n";
  std::cerr << "       " << cmdname << " [--pluginhelp | -p <pluginname>]\n";
  std::cerr << "       " << cmdname << " [--help | -h]\n";
  exit(1);
@@ -193,7 +194,7 @@ void CommonHandler::SetOptionVariables(CommonCmdLineParser & clp, ParamList & ov
 void CommonHandler::Execute(CommonCmdLineParser & clp)
 {
  std::list<std::string> args = clp.Arguments();
- if ((args.size() == 1) && (! clp.Defined("pluginhelp"))) ShowHelp();
+ if ((args.size() == 1) && ((! clp.Defined("input")) && (! clp.Defined("pluginhelp")))) ShowHelp();
  args.pop_front();
  if (args.size() == 1) { clp.AssignParameter("inputfile-file", args.front()); }
  SetVerbose(false);
@@ -224,7 +225,8 @@ void CommonHandler::Execute(CommonCmdLineParser & clp)
  if (clp.Defined("use"))
  {
   std::vector<std::string> ospl = SplitTextLine(clp["use-options"], ':');
-  std::vector<std::string> args = SplitTextLine(ospl[1], ',');
+  std::vector<std::string> args;
+  if (ospl.size() > 1) args = SplitTextLine(ospl[1], ',');
   std::string useargs = "";
   for (unsigned int i=0;i<args.size();++i)
   {
