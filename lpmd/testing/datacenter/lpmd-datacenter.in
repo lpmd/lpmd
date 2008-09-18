@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+import sys, copy
+
+DATACENTER_PLUGINPATH = '@prefix@/lib/lpmd'
+VERSION = '0.5.3beta1'
+
+#
+#
+#
+
+class DataCenter:
+
+  def __init__(self): self.ClearData()
+
+  def ClearData(self): self.data = []
+
+  def LoadPlugin(self, name, args={}):
+      oldsyspath = sys.path
+      sys.path = [ DATACENTER_PLUGINPATH ]
+      mod = __import__('dc_'+name)
+      sys.path = oldsyspath
+      try:
+        return mod.pluginLoader(args)
+      except Exception, x: raise x
+
+  def ReadFile(self, pluginname, path, args={}):
+      plug = self.LoadPlugin(pluginname, args)
+      f = open(path, 'r')
+      plug.ReadHeader(f)
+      for config in plug.ReadMany(f): self.data.append(config)
+      f.close()
+ 
+  def WriteFile(self, pluginname, path, args={}):
+      plug = self.LoadPlugin(pluginname, args)
+      f = open(path, 'w')
+      plug.WriteHeader(f)
+      plug.WriteMany(f, self.data)
+      f.close()
+
+  def DoAction(self, action):
+      if action[0] == 'read': self.ReadFile(action[1], action[2]['file'], action[2])
+      elif action[0] == 'write': self.WriteFile(action[1], action[2]['file'], action[2])
+
+#
+#
+#
+def ParseKeywordArgs(arglist):
+    kw = {}
+    defkw = ['file']
+    lspl = [x.strip() for x in arglist.split(',')]
+    for i in range(0, len(lspl)): 
+        x = lspl.pop(0)
+        if not '=' in x: 
+           if len(defkw) == 0: raise Exception('Syntax Error')
+           kw[defkw.pop(0)] = x.split('=')[0].strip()
+        else: kw[x.split('=')[0].strip()] = x.split('=')[1].strip()
+    return kw
+
+#
+# mini getopt :)
+#
+actions = []
+argvs = copy.deepcopy(sys.argv)
+argvs.pop(0)
+while True:
+      if len(argvs) == 0: break
+      arg = argvs.pop(0)
+      if arg == '-i' or arg == '--input':
+         options = argvs.pop(0)
+         modname, arglist = options.split(':')[0], options.split(':')[1]
+         actions.append(('read', modname, ParseKeywordArgs(arglist)))
+      elif arg == '-o' or arg == '--output':
+         options = argvs.pop(0)
+         modname, arglist = options.split(':')[0], options.split(':')[1]
+         actions.append(('write', modname, ParseKeywordArgs(arglist)))
+
+#
+# main program
+#
+dc = DataCenter() 
+if len(actions) == 0:
+   print "LPMD Datacenter version ", VERSION
+   print "\nUsage: lpmd-datacenter [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]"
+   print "       lpmd-datacenter -h"
+   sys.exit(1)
+else:
+   try:
+     for action in [x for x in actions if x[0] == 'read']: dc.DoAction(action)
+     for action in [x for x in actions if x[0] == 'write']: dc.DoAction(action)
+   except Exception, e: print e
+
+
