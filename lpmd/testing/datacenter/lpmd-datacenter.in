@@ -3,13 +3,43 @@
 import sys, copy
 
 DATACENTER_PLUGINPATH = '@prefix@/lib/lpmd'
-VERSION = '0.5.3beta1'
+VERSION = '0.5.3beta2'
 
 #
 #
 #
+class ManipulationLibrary:
 
-class DataCenter:
+  def condreducer(self, x):
+      try: return int(x)
+      except:
+        try: return float(x)
+        except: return x
+
+  def condformatter(self, x):
+      try: return ('%8.8f' % x).ljust(12)
+      except: 
+        try: return ('%d' % x).ljust(12)
+        except: return ('%s' % x).ljust(12)
+
+#
+#
+#
+class DataCenter(ManipulationLibrary):
+
+  class DataCenterException(Exception): pass
+
+  class MissingArgument(DataCenterException):
+      def __init__(self, plugname, misarg): self.plugin, self.arg = plugname, misarg
+      def __str__(self): return ("[Error] (in plugin %s): Missing argument: \"%s\"" % (self.plugin, self.arg))
+
+  class MissingTag(DataCenterException):
+      def __init__(self, plugname, tag): self.plugin, self.tag = plugname, tag
+      def __str__(self): return ("[Error] (in plugin %s): Missing tag: \"%s\"" % (self.plugin, self.tag))
+
+  class WrongFormat(DataCenterException):
+      def __init__(self, plugname, msg): self.plugin, self.msg = plugname, msg
+      def __str__(self): return ("[Error] (in plugin %s): %s" % (self.plugin, self.msg))
 
   def __init__(self): self.ClearData()
 
@@ -21,7 +51,9 @@ class DataCenter:
       mod = __import__('dc_'+name)
       sys.path = oldsyspath
       try:
-        return mod.pluginLoader(args)
+        p = mod.pluginLoader(self, args)
+        p.dc = self
+        return p
       except Exception, x: raise x
 
   def ReadFile(self, pluginname, path, args={}):
@@ -58,36 +90,43 @@ def ParseKeywordArgs(arglist):
     return kw
 
 #
-# mini getopt :)
-#
-actions = []
-argvs = copy.deepcopy(sys.argv)
-argvs.pop(0)
-while True:
-      if len(argvs) == 0: break
-      arg = argvs.pop(0)
-      if arg == '-i' or arg == '--input':
-         options = argvs.pop(0)
-         modname, arglist = options.split(':')[0], options.split(':')[1]
-         actions.append(('read', modname, ParseKeywordArgs(arglist)))
-      elif arg == '-o' or arg == '--output':
-         options = argvs.pop(0)
-         modname, arglist = options.split(':')[0], options.split(':')[1]
-         actions.append(('write', modname, ParseKeywordArgs(arglist)))
-
-#
 # main program
 #
-dc = DataCenter() 
-if len(actions) == 0:
-   print "LPMD Datacenter version ", VERSION
-   print "\nUsage: lpmd-datacenter [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]"
-   print "       lpmd-datacenter -h"
-   sys.exit(1)
-else:
-   try:
-     for action in [x for x in actions if x[0] == 'read']: dc.DoAction(action)
-     for action in [x for x in actions if x[0] == 'write']: dc.DoAction(action)
-   except Exception, e: print e
+if __name__ == '__main__':
+   #                               mini getopt :)
+   actions = []
+   argvs = copy.deepcopy(sys.argv)
+   argvs.pop(0)
+   while True:
+         if len(argvs) == 0: break
+         arg = argvs.pop(0)
+         if arg == '-i' or arg == '--input':
+            options = argvs.pop(0)
+            modname, arglist = options.split(':')[0], options.split(':')[1]
+            actions.append(('read', modname, ParseKeywordArgs(arglist)))
+         elif arg == '-o' or arg == '--output':
+            options = argvs.pop(0)
+            modname, arglist = options.split(':')[0], options.split(':')[1]
+            actions.append(('write', modname, ParseKeywordArgs(arglist)))
+         elif arg == '-p':
+            pluginname = argvs.pop(0)
+            dc = DataCenter()
+            try:
+              plug = dc.LoadPlugin(pluginname, {'showmode': True})
+              plug.Show()
+            except Exception, e: print e 
+            sys.exit(0)
 
+   #                            executes every action defined in the options 
+   dc = DataCenter() 
+   if len(actions) == 0:
+      print "LPMD Datacenter version ", VERSION
+      print "\nUsage: lpmd-datacenter [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]"
+      print "       lpmd-datacenter -h"
+      sys.exit(1)
+   else:
+      try:
+        for action in [x for x in actions if x[0] == 'read']: dc.DoAction(action)
+        for action in [x for x in actions if x[0] == 'write']: dc.DoAction(action)
+      except Exception, e: print e
 
