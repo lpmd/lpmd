@@ -33,6 +33,7 @@ LPMDInputReader::LPMDInputReader(PluginManager & pm): CommonInputReader(pm)
  DeclareStatement("steps", "n");
  DeclareStatement("dumping", "each dumpfile");
  DeclareStatement("monitor", "properties start end each output");
+ DeclareStatement("average", "properties start end each over output");
  DeclareStatement("integrator", "module start");
  DeclareStatement("apply", "module start end each");
  DeclareStatement("visualize", "module start end each");
@@ -45,6 +46,10 @@ LPMDInputReader::LPMDInputReader(PluginManager & pm): CommonInputReader(pm)
  param["monitor-start"] = "0";
  param["monitor-end"] = "-1";
  param["monitor-each"] = "10";
+ param["average-start"] = "0";
+ param["average-end"] = "-1";
+ param["average-each"] = "10";
+ param["average-over"] = "100";
  param["showcoords"] = "true";
  param["showunused"] = "true";
  param["dumping-each"] = "10000";
@@ -80,6 +85,17 @@ int LPMDInputReader::OnStatement(const std::string & name, const std::string & k
    param["monitor-end"] = "-1";
    param["monitor-each"] = "10";
    param.Remove("monitor-output");
+  }
+  else if (name == "average")
+  {
+   RunningAverageApplyInfo av(param["average-properties"], param.GetInteger("average-start"), param.GetInteger("average-end"), param.GetInteger("average-each"), param["average-output"], param.GetInteger("average-over"));
+   ravapply.push_back(av);
+   param.Remove("average-properties");
+   param["average-start"] = "0";
+   param["average-end"] = "-1";
+   param["average-each"] = "10";
+   param["average-over"] = "100";
+   param.Remove("average-output");
   }
   else if (name == "atom")
   {

@@ -93,7 +93,8 @@ void Simulator::LoadModules()
   pmod.SetUsed();
  }
 
- BannerPrint("SIMULATION MONITOR INFORMATION");
+ BannerPrint("SIMULATION MONITOR AND RUNNING AVERAGES INFORMATION");
+ std::cout << "Instant monitoring of properties:\n";
  for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
  {
   MonitorApplyInfo & mon = (*it);
@@ -116,7 +117,29 @@ void Simulator::LoadModules()
   }
   std::cout << '\n';
  }
-
+ std::cout << "Running averages of properties:\n";
+ for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
+ {
+  RunningAverageApplyInfo & rav = (*it);
+  if (rav.output == "") std::cout << "To standard output: \n";
+  else std::cout << "To file " << rav.output << ": \n";
+  std::list<std::string> namedprops = rav.properties;
+  for (std::list<std::string>::const_iterator it=namedprops.begin();it!=namedprops.end();++it)
+  {
+   const std::string propname(*it);
+   Module & pmod = pluginman.Provider(propname);
+   std::cout << "  -> " << propname << " from module \"" << pmod.Name();
+   InstantProperty & ip = CastModule<InstantProperty>(pmod);
+   if (rav.end_step == -1) rav.end_step = param.GetInteger("steps-n");
+   ip.start_step = rav.start_step;
+   ip.end_step = rav.end_step;
+   ip.interval = rav.interval;
+   std::cout << "\" (start=" << ip.start_step << ", end=" << ip.end_step << ", each=" << ip.interval << ", over=" << rav.average_over << ")\n";
+   monitorlist.push_back(&ip);
+   pmod.SetUsed();
+  }
+  std::cout << '\n';
+ }
  std::vector<std::string> visualizers = SplitTextLine(param["visualize-list"]);
  for (unsigned int i=0;i<visualizers.size();++i)
  {
@@ -399,6 +422,11 @@ void Simulator::Process()
   MonitorApplyInfo & mon = (*it);
   if (mon.output != "") mon.mout = new std::ofstream(mon.output.c_str(), std::ios::out);
  }
+ for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
+ {
+  RunningAverageApplyInfo & rav = (*it);
+  if (rav.output != "") rav.mout = new std::ofstream(rav.output.c_str(), std::ios::out);
+ } 
 
  int initial_step;
  if (param["restore-dumpfile"] == "") 
@@ -418,6 +446,13 @@ void Simulator::Process()
   *(mon.mout) << "# step     ";
   for (std::list<std::string>::const_iterator it=mon.properties.begin();it!=mon.properties.end();++it) { *(mon.mout) << std::setw(21) << *it; }
   *(mon.mout) << "\n\n";
+ }
+ for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
+ {
+  RunningAverageApplyInfo & rav = (*it);
+  *(rav.mout) << "# step     ";
+  for (std::list<std::string>::const_iterator it=rav.properties.begin();it!=rav.properties.end();++it) { *(rav.mout) << std::setw(21) << *it; }
+  *(rav.mout) << "\n\n";
  }
 
  //
@@ -504,7 +539,22 @@ void Simulator::Process()
   for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
   {
    MonitorApplyInfo & mon = (*it);
-   if (MustDo(step, mon.start_step, mon.end_step, mon.interval)) Monitor(mon);
+   if (MustDo(step, mon.start_step, mon.end_step, mon.interval))
+   {
+    // Actualiza todos los modulos llamados implicitamente por monitor
+    for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it) (*it)->Evaluate(sc, p_array);
+    Monitor(mon);
+   }
+  }
+  for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
+  {
+   RunningAverageApplyInfo & rav = (*it);
+   if (MustDo(step, rav.start_step, rav.end_step, rav.interval))
+   {
+    // Actualiza todos los modulos llamados implicitamente por monitor
+    for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it) (*it)->Evaluate(sc, p_array);
+    RunningAverage(rav);
+   }
   }
   DoStep();
  }
@@ -516,22 +566,17 @@ void Simulator::Process()
   MonitorApplyInfo & mon = (*it);
   if (mon.output != "") delete mon.mout;
  }
+ for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
+ {
+  RunningAverageApplyInfo & rav = (*it);
+  if (rav.output != "") delete rav.mout;
+ }
 }
 
 void Simulator::Monitor(MonitorApplyInfo & mon)
 {
  CommonInputReader & param = GetInputReader();
- SimulationCell & sc = GetCell();
- PotentialArray & p_array = GetPotentialArray();
-
- // Actualiza todos los modulos llamados implicitamente por monitor
- for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it)
- {
-  (*it)->Evaluate(sc, p_array); 
- }
-
  *(mon.mout) << std::setw(10) << std::left << step;
- 
  for (std::list<std::string>::const_iterator it=mon.properties.begin();it!=mon.properties.end();++it)
  {
   Module & pmod = pluginman.Provider(*it);
@@ -540,6 +585,21 @@ void Simulator::Monitor(MonitorApplyInfo & mon)
  }
  *(mon.mout) << '\n';
  mon.mout->flush();
+}
+
+void Simulator::RunningAverage(RunningAverageApplyInfo & rav)
+{
+ CommonInputReader & param = GetInputReader();
+ *(rav.mout) << std::setw(10) << std::left << step;
+ for (std::list<std::string>::const_iterator it=rav.properties.begin();it!=rav.properties.end();++it)
+ {
+  Module & pmod = pluginman.Provider(*it);
+  double pvalue = pmod.GetProperty(*it);
+  rav.AddNewValue(pvalue);
+  *(rav.mout) << std::setw(21) << rav.Average();
+ }
+ *(rav.mout) << '\n';
+ rav.mout->flush();
 }
 
 void Simulator::Finish()
