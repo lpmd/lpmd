@@ -584,7 +584,6 @@ void Simulator::Monitor(MonitorApplyInfo & mon)
   *(mon.mout) << std::setw(21) << pvalue;
  }
  *(mon.mout) << '\n';
- mon.mout->flush();
 }
 
 void Simulator::RunningAverage(RunningAverageApplyInfo & rav)
@@ -599,7 +598,6 @@ void Simulator::RunningAverage(RunningAverageApplyInfo & rav)
   *(rav.mout) << std::setw(21) << rav.Average();
  }
  *(rav.mout) << '\n';
- rav.mout->flush();
 }
 
 void Simulator::Finish()
