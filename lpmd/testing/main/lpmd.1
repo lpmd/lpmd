@@ -3,7 +3,7 @@
 lpmd \- a modular molecular dynamics simulation code
 .SH "SYNOPSIS"
 .B lpmd
-[\fI\-v\fR] [\fI\-L a,b,c\fR] [\fI\-A alpha,beta,gamma\fR] [\fI\-V ax,ay,az,bx,by,bz,cx,cy,cz\fR] [\fI\-S value\fR] [\fI\-O variable=value\fR,...] [\fI\-i plugin:opt1,opt2,...\fR] [\fI\-o plugin:opt1,opt2,...\fR] [\fI\-u plugin:opt1,opt2,...\fR] [\fI\-r\fR] [\fIcontrol\-file\fR]
+[\fI\-v\fR] [\fI\-L a,b,c\fR] [\fI\-A alpha,beta,gamma\fR] [\fI\-V ax,ay,az,bx,by,bz,cx,cy,cz\fR] [\fI\-S value\fR] [\fI\-O variable=value\fR,...] [\fI\-i plugin:opt1,opt2,...\fR] [\fI\-o plugin:opt1,opt2,...\fR] [\fI\-u plugin:opt1,opt2,...\fR] [\fI\-c plugin:opt1,opt2,...\fR] [\fI\-r\fR] [\fIcontrol\-file\fR]
 .br 
 .B lpmd
 \-p \fIplugin\-name\fR
@@ -45,6 +45,9 @@ loads an output plugin with parameters \fBopt1\fR, \fBopt2\fR, etc. Equivalent t
 .TP
 \fB\-u\fR, \fB\-\-use\fR
 loads an arbitrary plugin (property, modifier, visualizer) with parameters \fBopt1\fR, \fBopt2\fR, etc. Equivalent to the \fBuse\fR block in a control file
+.TP
+\fB\-c\fR, \fB\-\-cellmanager\fR
+loads a cellmanager plugin with parameters \fBopt1\fR, \fBopt2\fR, etc. Equivalent to the \fBcellmanager\fR statement in a control file
 .TP
 \fB\-r\fR, \fB\-\-replace-cell\fR
 when this option is used, the information defining the size and shape of the simulation box given by the input plugin replaces the information given by the \fBcell\fR statement or the \fB\-L\fR, \fB\-A\fR and \fB\-V\fR flags

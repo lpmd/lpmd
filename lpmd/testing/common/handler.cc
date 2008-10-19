@@ -137,7 +137,9 @@ void CommonHandler::Initialize()
   if (param["input-module"] == "") EndWithError("A CellGenerator plugin was not assigned. Maybe you forgot an \"input\" statement?");
   else
   {
-   pluginman.LoadPlugin(param["input-module"], param["input-moduleargs"]);
+   std::string extra_args = "";
+   if (param.GetBool("replacecell")) extra_args = "replacecell true ";
+   pluginman.LoadPlugin(param["input-module"], extra_args+param["input-moduleargs"]);
    pluginman[param["input-module"]].SetUsed();
   }
  }
@@ -151,7 +153,7 @@ void CommonHandler::ShowHelp()
  std::cerr << "Usage: " << cmdname << " [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]";
  std::cerr << " [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]";
  std::cerr << " [--option | -O <option=value,option=value,...>] [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]";
- std::cerr << " [--use | -u plugin:opt1,opt2,...] [--replace-cell | -r] [file.control]\n";
+ std::cerr << " [--use | -u plugin:opt1,opt2,...] [--cellmanager | -c plugin:opt1,opt2,...] [--replace-cell | -r] [file.control]\n";
  std::cerr << "       " << cmdname << " [--pluginhelp | -p <pluginname>]\n";
  std::cerr << "       " << cmdname << " [--help | -h]\n";
  exit(1);
@@ -236,6 +238,24 @@ void CommonHandler::Execute(CommonCmdLineParser & clp)
   ModuleInfo minf(ospl[0], ospl[0], useargs);
   param.uselist.push_back(minf);
   param["special-list"] = param["special-list"]+ospl[0]+" ";
+ }
+ if (clp.Defined("cellmanager"))
+ {
+  std::string outline = "cellmanager ";
+  std::vector<std::string> cspl = SplitTextLine(clp["cellmanager-options"], ':');
+  std::vector<std::string> args;
+  if (cspl.size() > 1) args = SplitTextLine(cspl[1], ',');
+  outline += (cspl[0]+" ");
+  std::string useargs = "";
+  for (unsigned int i=0;i<args.size();++i)
+  {
+   std::vector<std::string> tmp = SplitTextLine(args[i], '=');
+   useargs += (tmp[0]+" "+tmp[1]+" ");
+  }
+  ModuleInfo minf(cspl[0], cspl[0], useargs);
+  param.uselist.push_back(minf);
+  param["cellmanager-module"] = cspl[0];
+  param.ParseLine(outline); 
  }
  if (clp["inputfile-file"] != "")
  {
