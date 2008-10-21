@@ -23,6 +23,8 @@ PKG_CHECK_MODULES(LPMD, liblpmd-1.0 > 1.0.1,
                   fi
                   CPPFLAGS="${CPPFLAGS} -I${LPMDDIR}/include"
                   LDFLAGS="${LDFLAGS} -L${LPMDDIR}/lib"
+                  AC_SUBST(CPPFLAGS)
+                  AC_SUBST(LDFLAGS)
 )
 
 AC_CHECK_LIB([lpmd], [main], [LIBS="${LIBS} -llpmd -ldl"],
