@@ -71,6 +71,47 @@ void CommonHandler::LoadModules()
  }
 }
 
+void CommonHandler::ShowConfigsInfo(std::vector<SimulationCell> & configs)
+{
+ // Muestra informacion util acerca de las configuraciones
+ std::cerr << '\n';
+ for (unsigned long int i=0;i<configs.size();++i)
+ {
+  SimulationCell & sc = configs[i];
+  Vector pos, cm(0.0, 0.0, 0.0);
+  double tmass = 0.0, xmin, xmax, ymin, ymax, zmin, zmax;
+  xmin = xmax = sc[0].Position().GetX();
+  ymin = ymax = sc[0].Position().GetY();
+  zmin = zmax = sc[0].Position().GetZ();
+  for (long int j=0;j<sc.Size();++j)
+  {
+   pos = sc[j].Position();
+   cm = cm + sc[j].Mass()*pos;
+   tmass += sc[j].Mass();
+   if (pos.GetX() < xmin) xmin = pos.GetX();
+   if (pos.GetX() > xmax) xmax = pos.GetX();
+   if (pos.GetY() < ymin) ymin = pos.GetY();
+   if (pos.GetY() > ymax) ymax = pos.GetY();
+   if (pos.GetZ() < zmin) zmin = pos.GetZ();
+   if (pos.GetZ() > zmax) zmax = pos.GetZ();
+  }
+  cm = cm / tmass;
+  std::cerr << "Configuration " << i << ": \n";
+  std::cerr << "-> Number of atoms  : " << sc.Size() << " atoms\n";
+  for (int q=0;q<3;++q) 
+     std::cerr << "-> h[" << q << "]             : " << sc.GetVector(q) << '\n';
+  std::cerr << "-> Volume           : " << sc.Volume() << '\n'; 
+  std::cerr << "-> Center of Mass   : " << cm << '\n'; 
+  std::cerr << "-> X coordinate     : [ " << xmin << " , " << xmax << " ]\n";
+  std::cerr << "-> Y coordinate     : [ " << ymin << " , " << ymax << " ]\n";
+  std::cerr << "-> Z coordinate     : [ " << zmin << " , " << zmax << " ]\n";
+  std::cerr << "-> X displ. from CM : [ " << xmin-cm.Get(0) << " , " << xmax-cm.Get(0) << " ]\n";
+  std::cerr << "-> Y displ. from CM : [ " << ymin-cm.Get(1) << " , " << ymax-cm.Get(1) << " ]\n";
+  std::cerr << "-> Z displ. from CM : [ " << zmin-cm.Get(2) << " , " << zmax-cm.Get(2) << " ]\n";
+  std::cerr << '\n';
+ }
+}
+
 //
 //
 //

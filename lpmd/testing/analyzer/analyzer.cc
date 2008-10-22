@@ -92,10 +92,7 @@ void Analyzer::Initialize()
   configs[0].AssignIndex();
  }
  if (Verbose()) 
- {
-  std::cerr << "-> Read " << configs.size() << " configurations." << '\n';
-  std::cerr << "-> First configuration has " << configs[0].Size() << " atoms\n";
- }
+  std::cerr << "-> Read " << configs.size() << " configuration(s)." << '\n';
  pluginman.UnloadPlugin(param["input-module"]);
 }
 
@@ -147,6 +144,7 @@ void Analyzer::Process()
 
  if (Verbose())
  { 
+  ShowConfigsInfo(configs);
   if (iproplist.size() > 0) std::cerr << "-> Will calculate the following instant properties: \n";
   for (std::vector<InstantProperty *>::iterator it=iproplist.begin();it!=iproplist.end();++it)
   {

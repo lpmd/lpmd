@@ -10,9 +10,12 @@
 #include "input.h"
 #include "cmdline.h"
 
+#include <vector>
+
 #include <lpmd/md.h>
 #include <lpmd/paramlist.h>
 #include <lpmd/pluginmanager.h>
+#include <lpmd/simulationcell.h>
 
 class CommonHandler: public lpmd::MD
 {
@@ -26,6 +29,7 @@ class CommonHandler: public lpmd::MD
   virtual void ShowPluginHelp(std::string);
   virtual void LoadUseModules();
   virtual void LoadModules();
+  virtual void ShowConfigsInfo(std::vector<SimulationCell> &);
 
   virtual void Initialize() = 0;
   virtual void Process() = 0;

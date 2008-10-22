@@ -81,10 +81,7 @@ void Converter::Initialize()
   cgen.Generate(configs[0]);
  }
  if (Verbose()) 
- {
-  std::cerr << "-> Read " << configs.size() << " configurations." << '\n';
-  std::cerr << "-> Configuration 0 has " << configs[0].Size() << " atoms\n";
- }
+  std::cerr << "-> Read " << configs.size() << " configuration(s)." << '\n';
  pluginman.UnloadPlugin(param["input-module"]);
 }
 
@@ -136,6 +133,7 @@ void Converter::Process()
 
  if (Verbose())
  {
+  ShowConfigsInfo(configs);
   if (smlist.size() > 0) std::cerr << "-> Will apply the following modifiers: \n";
   for (std::vector<SystemModifier *>::iterator it=smlist.begin();it!=smlist.end();++it)
   {
