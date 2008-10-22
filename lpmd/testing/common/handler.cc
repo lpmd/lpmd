@@ -102,9 +102,9 @@ void CommonHandler::ShowConfigsInfo(std::vector<SimulationCell> & configs)
      std::cerr << "-> h[" << q << "]             : " << sc.GetVector(q) << '\n';
   std::cerr << "-> Volume           : " << sc.Volume() << '\n'; 
   std::cerr << "-> Center of Mass   : " << cm << '\n'; 
-  std::cerr << "-> X coordinate     : [ " << xmin << " , " << xmax << " ]\n";
-  std::cerr << "-> Y coordinate     : [ " << ymin << " , " << ymax << " ]\n";
-  std::cerr << "-> Z coordinate     : [ " << zmin << " , " << zmax << " ]\n";
+  std::cerr << "-> X coordinate     : [ " << xmin << " , " << xmax << " ] (width: " << xmax-xmin << ")\n";
+  std::cerr << "-> Y coordinate     : [ " << ymin << " , " << ymax << " ] (width: " << ymax-ymin << ")\n";
+  std::cerr << "-> Z coordinate     : [ " << zmin << " , " << zmax << " ] (width: " << zmax-zmin << ")\n";
   std::cerr << "-> X displ. from CM : [ " << xmin-cm.Get(0) << " , " << xmax-cm.Get(0) << " ]\n";
   std::cerr << "-> Y displ. from CM : [ " << ymin-cm.Get(1) << " , " << ymax-cm.Get(1) << " ]\n";
   std::cerr << "-> Z displ. from CM : [ " << zmin-cm.Get(2) << " , " << zmax-cm.Get(2) << " ]\n";
