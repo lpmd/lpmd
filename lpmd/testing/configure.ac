@@ -14,6 +14,8 @@ AC_ARG_WITH(lpmd,
         LPMDDIR="${with_lpmd}"
       fi ])
 
+#AC_DEFINE([NUMBERED_RELEASE], [0], [Marks this revision as a numbered release])
+
 PKG_CHECK_MODULES(LPMD, liblpmd-1.0 > 1.0.1,
                   CPPFLAGS="$CPPFLAGS $LPMD_CFLAGS";
                   LDFLAGS="$LDFLAGS $LPMD_LIBS";

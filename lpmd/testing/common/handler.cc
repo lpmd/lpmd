@@ -2,6 +2,7 @@
 //
 //
 
+#include "version.h"
 #include "handler.h"
 #include "cmdline.h"
 #include "config.h"
@@ -189,7 +190,11 @@ void CommonHandler::Initialize()
 
 void CommonHandler::ShowHelp()
 {
- std::cerr << name << " version " << VERSION << std::endl;
+ std::cerr << name << " version " << VERSION;
+ #ifndef NUMBERED_RELEASE
+ std::cerr << " (from " << SVNBRANCH << ", revision " << SVNREVISION << ")";
+ #endif
+ std::cerr << '\n';
  std::cerr << "Using liblpmd version " << lpmd::LibraryVersion() << std::endl << std::endl;
  std::cerr << "Usage: " << cmdname << " [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]";
  std::cerr << " [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]";
