@@ -212,7 +212,10 @@ void CommonHandler::ShowPluginHelp(std::string plugin)
  BannerPrint(str.str());
  PluginManager pm;
  pm.LoadPlugin(plugin, "tempmodule", "");
- std::cout << "Loaded from file: " << pm["tempmodule"]["fullpath"] << '\n' << '\n';
+ std::cout << "Loaded from file: " << pm["tempmodule"]["fullpath"] << '\n';
+ if (pm["tempmodule"].Defined("version")) 
+    std::cout << "Plugin version: " << pm["tempmodule"]["version"] << '\n';
+ std::cout << '\n';
  pm["tempmodule"].ShowHelp();
  BannerPrint("Provides");
  std::cout << "     >> " << pm["tempmodule"].Provides() << '\n';
