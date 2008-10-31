@@ -43,6 +43,9 @@ class CommonHandler: public lpmd::MD
   void SetVerbose(bool v) { verbose = v; }
   bool Verbose() const { return verbose; }
 
+  const std::string ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp);
+  const std::string ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp, ModuleInfo & minf);
+
  protected:
    lpmd::SimulationCell *scell;
    lpmd::PluginManager pluginman;

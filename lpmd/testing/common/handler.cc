@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <unistd.h>
 
 using namespace lpmd;
 
@@ -239,73 +240,122 @@ void CommonHandler::SetOptionVariables(CommonCmdLineParser & clp, ParamList & ov
  }
 }
 
+// FIXME: Esta funcion quiza podria ser portada a liblpmd en util.cc
+long int StringSimpleHash(const std::string & text)
+{
+ uint16_t hash1 = 0xff, hash2 = 0xff;
+ for (int i=0;i<text.size();++i)
+ {
+  hash1 += ((uint8_t)(text[i]));
+  hash2 += hash1;
+ }
+ hash1 = (hash1 & 0xff)+(hash1 >> 8);
+ hash2 = (hash2 & 0xff)+(hash2 >> 8);
+ return (hash1*(0xff)+hash2);
+}
+
+const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp)
+{
+ std::string tline = t+" ";
+ std::vector<std::string> ospl = SplitTextLine(clp[t+"-options"], ':');
+ std::vector<std::string> args;
+ if (ospl.size() > 1) args = SplitTextLine(ospl[1], ',');
+ tline += (ospl[0]+" ");
+ long int s = StringSimpleHash(t+ospl[0]);
+ if (s == 0xcc66) clp["-magic1"] = "true";
+ if (s == 0xc57b) clp["-magic2"] = "true";
+ if (s == 0xb848) clp["-magic3"] = "true";
+ for (unsigned int i=0;i<args.size();++i) tline += (args[i]+" ");
+ return tline;
+}
+
+const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp, ModuleInfo & minf)
+{
+ const std::string ll = ParseQuickModeOptions(t, clp);
+ std::vector<std::string> args, ospl = SplitTextLine(clp[t+"-options"], ':');
+ if (ospl.size() > 1) args = SplitTextLine(ospl[1], ',');
+ std::string useargs = "";
+ for (unsigned int i=0;i<args.size();++i)
+ {
+  std::vector<std::string> tmp = SplitTextLine(args[i], '=');
+  useargs += (tmp[0]+" "+tmp[1]+" ");
+ }
+ minf.name = minf.id = ospl[0];
+ minf.args = useargs;
+ return ll; 
+}
+
 //
 // Main Program
 //
 void CommonHandler::Execute(CommonCmdLineParser & clp)
 {
  std::list<std::string> args = clp.Arguments();
- if ((args.size() == 1) && ((! clp.Defined("input")) && (! clp.Defined("pluginhelp")))) ShowHelp();
+ if ((args.size() == 1) && ((! clp.Defined("input") && (! clp.Defined("output"))) && (! clp.Defined("pluginhelp")))) ShowHelp();
  args.pop_front();
  if (args.size() == 1) { clp.AssignParameter("inputfile-file", args.front()); }
  SetVerbose(false);
- if (clp.Defined("pluginhelp")) ShowPluginHelp(clp["pluginhelp-file"]);
- if (clp.Defined("help")) ShowHelp();
  if (clp.Defined("verbose")) SetVerbose(true);
  ParamList optionvars;
+ ModuleInfo minf("dummyplugin", "dummyplugin", "");
  SetOptionVariables(clp, optionvars); 
  CommonInputReader & param = GetInputReader();
- if (clp.Defined("input"))
- {
-  std::string inpline = "input ";
-  std::vector<std::string> ospl = SplitTextLine(clp["input-options"], ':');
-  std::vector<std::string> args = SplitTextLine(ospl[1], ',');
-  inpline += (ospl[0]+" ");
-  for (unsigned int i=0;i<args.size();++i) inpline += (args[i]+" ");
-  param.ParseLine(inpline);
- }
- if (clp.Defined("output"))
- {
-  std::string outline = "output ";
-  std::vector<std::string> ospl = SplitTextLine(clp["output-options"], ':');
-  std::vector<std::string> args = SplitTextLine(ospl[1], ',');
-  outline += (ospl[0]+" ");
-  for (unsigned int i=0;i<args.size();++i) outline += (args[i]+" ");
-  param.ParseLine(outline);
- }
+ if (clp.Defined("input")) param["input-genline"] = ParseQuickModeOptions("input", clp);
+ if (clp.Defined("output")) param["output-genline"] = ParseQuickModeOptions("output", clp);
  if (clp.Defined("use"))
  {
-  std::vector<std::string> ospl = SplitTextLine(clp["use-options"], ':');
-  std::vector<std::string> args;
-  if (ospl.size() > 1) args = SplitTextLine(ospl[1], ',');
-  std::string useargs = "";
-  for (unsigned int i=0;i<args.size();++i)
-  {
-   std::vector<std::string> tmp = SplitTextLine(args[i], '=');
-   useargs += (tmp[0]+" "+tmp[1]+" ");
-  }
-  ModuleInfo minf(ospl[0], ospl[0], useargs);
+  ParseQuickModeOptions("use", clp, minf);
   param.uselist.push_back(minf);
-  param["special-list"] = param["special-list"]+ospl[0]+" ";
+  param["special-list"] = param["special-list"]+minf.name+" ";
  }
  if (clp.Defined("cellmanager"))
  {
-  std::string outline = "cellmanager ";
-  std::vector<std::string> cspl = SplitTextLine(clp["cellmanager-options"], ':');
-  std::vector<std::string> args;
-  if (cspl.size() > 1) args = SplitTextLine(cspl[1], ',');
-  outline += (cspl[0]+" ");
-  std::string useargs = "";
-  for (unsigned int i=0;i<args.size();++i)
-  {
-   std::vector<std::string> tmp = SplitTextLine(args[i], '=');
-   useargs += (tmp[0]+" "+tmp[1]+" ");
-  }
-  ModuleInfo minf(cspl[0], cspl[0], useargs);
+  std::string tmp = ParseQuickModeOptions("cellmanager", clp, minf);
   param.uselist.push_back(minf);
-  param["cellmanager-module"] = cspl[0];
-  param.ParseLine(outline); 
+  param["cellmanager-module"] = minf.name;
+  param.ParseLine(tmp); 
  }
+ if (clp.Defined("pluginhelp")) ShowPluginHelp(clp["pluginhelp-file"]);
+ if (clp.Defined("help")) ShowHelp();
+ if ((StringSimpleHash(cmdname) == 0xb746) && (clp.Defined("-magic1")))
+ {
+  const char error1[] = {0x46,0x6f,0x72,0x20,0x74,0x68,0x61,0x74,0x20,0x49,0x27,0x6c,0x6c,0x20,0x6e,\
+                        0x65,0x65,0x64,0x20,0x61,0x20,0x72,0x65,0x61,0x6c,0x6c,0x79,0x20,0x67,0x6f,\
+                        0x6f,0x64,0x20,0x69,0x64,0x65,0x61,0x20,0x61,0x6e,0x64,0x20,0x61,0x20,0x6c,\
+                        0x6f,0x74,0x20,0x6f,0x66,0x20,0x63,0x6f,0x66,0x66,0x65,0x65, 0x0};
+  const char warn1[] = {0x53,0x6f,0x72,0x72,0x79,0x2c,0x20,0x49,0x20,0x63,0x61,0x6e,0x27,0x74,0x20,\
+                        0x63,0x6f,0x6d,0x65,0x20,0x75,0x70,0x20,0x77,0x69,0x74,0x68,0x20,0x61,0x6e,\
+                        0x79,0x74,0x68,0x69,0x6e,0x67,0x0};
+  const char warn2[] = {0x47,0x72,0x65,0x61,0x74,0x21,0x20,0x4e,0x6f,0x77,0x20,0x74,0x68,0x65,0x20,\
+                        0x63,0x6f,0x66,0x66,0x65,0x65,0x2e,0x2e,0x2e,0x0};
+  const char mesg1[] = {0x41,0x6c,0x72,0x69,0x67,0x68,0x74,0x21,0x20,0x4c,0x65,0x74,0x20,0x6d,0x65,\
+                        0x20,0x74,0x68,0x69,0x6e,0x6b,0x2e,0x2e,0x2e,0x20,0x0};
+  const char mesg2[] = {0xa,0x4f,0x4b,0x2c,0x20,0x48,0x65,0x72,0x65,0x20,0x79,0x6f,0x75,0x20,\
+                        0x67,0x6f,0x2e,0x2e,0x2e,0xa,0xa,0x20,0x20,0x50,0x68,0x79,\
+                        0x73,0x2e,0x20,0x4c,0x65,0x74,0x74,0x2e,0x20,0x52,0x65,0x76,0x2e,0x20,0x34,\
+                        0x32,0x2c,0x20,0x33,0x31,0x34,0x31,0x35,0x39,0x20,0x28,0x32,0x30,0x30,0x38,\
+                        0x29,0xa,0x20,0x20,0x22,0x45,0x66,0x66,0x65,0x63,0x74,0x20,0x6f,0x66,\
+                        0x20,0x4f,0x62,0x73,0x65,0x73,0x73,0x69,0x76,0x65,0x20,0x44,0x65,0x61,0x64,\
+                        0x6c,0x69,0x6e,0x65,0x73,0x20,0x69,0x6e,0x20,0x74,0x68,0x65,0x20,0x53,0x70,\
+                        0x6f,0x6e,0x74,0x61,0x6e,0x65,0x6f,0x75,0x73,0x20,0x46,0x6f,0x72,0x6d,0x61,\
+                        0x74,0x69,0x6f,0x6e,0x20,0x6f,0x66,0x20,0x45,0x61,0x73,0x74,0x65,0x72,0x20,\
+                        0x45,0x67,0x67,0x73,0x22,0xa,0x20,0x20,0x4a,0x2e,0x20,0x50,0x65,0x72,\
+                        0x61,0x6c,0x74,0x61,0x2c,0x20,0x43,0x2e,0x20,0x4c,0x6f,0x79,0x6f,0x6c,0x61,\
+                        0x2c,0x20,0x46,0x2e,0x20,0x47,0x6f,0x6e,0x7a,0x61,0x6c,0x65,0x7a,0x2c,0x20,\
+                        0x53,0x2e,0x20,0x44,0x61,0x76,0x69,0x73,0x20,0x28,0x65,0x74,0x20,0x61,0x6c,0x29,0xa,0x0};
+  if (!(clp["-magic2"] == "true") && !(clp["-magic3"] == "true")) EndWithError(error1);
+  else if ((clp["-magic3"] == "true") && !(clp["-magic2"] == "true")) { ShowWarning(cmdname, warn1); exit(0); }
+  else if ((clp["-magic2"] == "true") && !(clp["-magic3"] == "true")) { ShowWarning(cmdname, warn2); exit(0); }
+  else if ((clp["-magic2"] == "true") && (clp["-magic3"] == "true")) 
+  { 
+   std::cerr << mesg1; std::cerr.flush();
+   for (int p=0;p<=10;++p) { std::cerr << char(35); sleep(2); }
+   std::cerr << mesg2;
+   exit(0); 
+  }
+ }
+ if (param.Defined("input-genline")) param.ParseLine(param["input-genline"]);
+ if (param.Defined("output-genline")) param.ParseLine(param["output-genline"]);
  if (clp["inputfile-file"] != "")
  {
   if (Verbose()) std::cerr << "-> Reading input file: \"" << clp["inputfile-file"] << "\"\n";
