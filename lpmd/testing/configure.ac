@@ -1,7 +1,7 @@
 
 AC_INIT
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(lpmd, 0.5.2)
+AM_INIT_AUTOMAKE(lpmd, 0.5.3)
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_RANLIB
@@ -34,5 +34,5 @@ AC_CHECK_LIB([lpmd], [main], [LIBS="${LIBS} -llpmd -ldl"],
  AC_MSG_ERROR([Could not find the lpmd library. You may want to specify the installation directory with --with-lpmd])
 ], [-ldl])
 
-AC_OUTPUT(common/Makefile main/Makefile analyzer/Makefile converter/Makefile visualizer/Makefile datacenter/lpmd-datacenter datacenter/Makefile Makefile)
+AC_OUTPUT(common/Makefile main/Makefile analyzer/Makefile converter/Makefile visualizer/Makefile Makefile)
 
