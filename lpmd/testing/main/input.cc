@@ -70,13 +70,7 @@ int LPMDInputReader::OnStatement(const std::string & name, const std::string & k
  PluginManager & pm = *(pluginman);
  if (regular)
  {
-  if (name == "type")
-  {
-   inside_typeblock = true;
-   param["atom-"+param["type-name"]] = "";
-   param["type-args"] = "";
-  }
-  else if (name == "monitor")
+  if (name == "monitor")
   {
    MonitorApplyInfo mon(param["monitor-properties"], param.GetInteger("monitor-start"), param.GetInteger("monitor-end"), param.GetInteger("monitor-each"), param["monitor-output"]);
    monapply.push_back(mon);
@@ -120,22 +114,16 @@ int LPMDInputReader::OnStatement(const std::string & name, const std::string & k
  else
  {
   // Instrucciones irregulares y no validas 
-  if (inside_typeblock == true)
+  if (name == "typeblock")
   {
-   if (name == "endtype")
-   {
-    // Procesa el caso cuando se esta dentro de un bloque type / endtype
-    param["type-list"] = param["type-list"] + param["type-name"] + " ";
-    param["type-"+param["type-name"]+"-args"] = param["type-args"];
-    param.Remove("type-name");
-    param.Remove("type-args");
-    inside_typeblock = false;
-   }
-   else if (name != param["type-name"])
-   {
-    param["type-args"] = param["type-args"] + name + " ";
-    while (words.size() > 0) param["type-args"] = param["type-args"] + GetNextWord() + " ";
-   }
+   param["type-name"] = GetNextWord();
+   param["type-list"] = param["type-list"] + param["type-name"] + " ";
+   param["atom-"+param["type-name"]] = "";
+   param["type-args"] = "";
+   while (words.size() > 0) param["type-args"] = param["type-args"] + (GetNextWord()+" ");
+   param["type-"+param["type-name"]+"-args"] = param["type-args"];
+   param.Remove("type-name");
+   param.Remove("type-args");
   }
   else return CommonInputReader::OnStatement(name, keywords, regular);
  }

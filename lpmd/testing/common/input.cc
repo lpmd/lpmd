@@ -65,9 +65,53 @@ void CommonInputReader::ParseLine(std::string line)
 //
 //
 //
+void CommonInputReader::Read(std::istream & istr, const ParamList & options, const std::string inpfile)
+{
+ std::string inpbuffer, line;
+ while (!istr.eof())
+ {
+  getline(istr, line);
+  std::vector<std::string> tmpwords = SplitTextLine(line);
+  if (tmpwords.size() == 0) continue;
+  if (tmpwords[0] == "use") 
+  {
+   inpbuffer += ("useblock "+tmpwords[1]+" ");
+   if (tmpwords.size() > 2) inpbuffer += (tmpwords[3]+" ");
+   else inpbuffer += (tmpwords[1]+" ");
+   while (1)
+   {
+    if (istr.eof()) EndWithError("\"use\" block was not properly closed with \"enduse\"");
+    getline(istr, line);
+    RemoveUnnecessarySpaces(line);
+    if (line == "enduse") break;
+    inpbuffer += (line+" "); 
+   }
+   inpbuffer += "\n";
+  }
+  else if (tmpwords[0] == "type")
+  {
+   inpbuffer += ("typeblock "+tmpwords[1]+" ");
+   while (1)
+   {
+    if (istr.eof()) EndWithError("\"type\" block was not properly closed with \"endtype\"");
+    getline(istr, line);
+    RemoveUnnecessarySpaces(line);
+    if (line == "endtype") break;
+    inpbuffer += (line+" "); 
+   }
+   inpbuffer += "\n";
+  }
+  else inpbuffer += (line+"\n");
+ } 
+ std::istringstream bufistr(inpbuffer);
+ InputFile::Read(bufistr, options, inpfile);
+}
+
+//
+//
+//
 void CommonInputReader::Read(std::string sysfile, const ParamList & optionvars)
 {
- inside_useblock = false;
  ovpointer = &optionvars;
  InputFile::Read(sysfile, optionvars);
  ParamList & param = (*this);
@@ -90,14 +134,7 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
  if (regular)
  {
   // Instrucciones regulares
-  if (name == "use")
-  {
-   if (param.Defined("use-alias")) pm.DefineAlias(param["use-alias"], param["use-module"]);
-   else param["use-alias"] = param["use-module"];
-   inside_useblock = true;
-   param["use-args"] = "";
-  }
-  else if (name == "include")
+  if (name == "include")
   {
    assert(ovpointer != NULL);
    Read(param["include-inputfile"], *ovpointer);
@@ -117,24 +154,18 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
  else
  {
   // Instrucciones irregulares y no validas 
-  if (inside_useblock == true)
-  {
-   if (name == "enduse") 
-   { 
-    // Procesa el caso cuando se esta dentro de un bloque use / enduse
-    ModuleInfo minf(param["use-module"], param["use-alias"], param["use-args"]);
-    uselist.push_back(minf);
-    param.Remove("use-module");
-    param.Remove("use-alias");
-    param.Remove("use-args");
-    param.Remove("use-as");
-    inside_useblock = false;
-   }
-   else if (name != param["use-module"])
-   {
-    param["use-args"] = param["use-args"] + name + " ";
-    while (words.size() > 0) param["use-args"] = param["use-args"] + GetNextWord() + " ";
-   }
+  if (name == "useblock") 
+  { 
+   param["use-module"] = GetNextWord();
+   param["use-alias"] = GetNextWord();
+   pm.DefineAlias(param["use-alias"], param["use-module"]);
+   param["use-args"] = "";
+   while (words.size() > 0) param["use-args"] = param["use-args"] + (GetNextWord()+" ");
+   ModuleInfo minf(param["use-module"], param["use-alias"], param["use-args"]);
+   uselist.push_back(minf);
+   param.Remove("use-module");
+   param.Remove("use-alias");
+   param.Remove("use-args");
   }
   else if (name == "input")
   {
