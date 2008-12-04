@@ -259,7 +259,22 @@ const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, Co
  std::string tline = t+" ";
  std::vector<std::string> ospl = SplitTextLine(clp[t+"-options"], ':');
  std::vector<std::string> args;
- if (ospl.size() > 1) args = SplitTextLine(ospl[1], ',');
+ if (ospl.size() > 1)
+ {
+  std::vector<std::string> values = FindBetween(ospl[1]);
+  args = SplitTextLine(ospl[1],',');
+  for(unsigned int i=0;i<args.size();++i) 
+  {
+   size_t p;
+   p = args[i].find_first_of("%");
+   if (p!=std::string::npos)
+   {
+    std::string sub = args[i].substr(p,args[i].size()-p);
+    int l=atoi(sub.c_str());
+    args[i].replace(p,args[i].size()-p,values[l]);
+   }
+  }
+ }
  tline += (ospl[0]+" ");
  long int s = StringSimpleHash(t+ospl[0]);
  if (s == 0xcc66) clp["-magic1"] = "true";
