@@ -556,6 +556,7 @@ void Simulator::Process()
     RunningAverage(rav);
    }
   }
+  sc.MetaData().AssignParameter("step", ToString<int>(step));
   DoStep();
  }
  if (outfile != NULL) delete [] outfile;
