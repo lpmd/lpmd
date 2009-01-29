@@ -27,6 +27,7 @@ CommonInputReader::CommonInputReader(PluginManager & pm): ovpointer(NULL)
  DeclareStatement("potential", "module a b");
  DeclareStatement("cellmanager", "module");
  DeclareStatement("set", "option value");
+ DeclareStatement("bond", "species1 species2 length");
 
  // Some default values
  ParamList & param = (*this);
@@ -149,6 +150,10 @@ int CommonInputReader::OnStatement(const std::string & name, const std::string &
    std::string tname = param[name+"-module"];
    param[tname+"-args"] = keywords;
    param[name+"-list"] = param[name+"-list"] + tname + " ";
+  }
+  else if (name == "bond")
+  {
+   bondtable["bond-"+param["bond-species1"]+"-"+param["bond-species2"]] = param.GetDouble("bond-length");
   }
  }
  else

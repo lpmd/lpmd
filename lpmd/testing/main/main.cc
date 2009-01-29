@@ -458,6 +458,13 @@ void Simulator::Process()
  //
  // MD Loop
  //
+
+ // Assign the values for bond lengths into sc.MetaData()
+ for (std::map<std::string, double>::const_iterator it=inp->bondtable.begin();it!=inp->bondtable.end();++it)
+ {
+  sc.MetaData().AssignParameter((*it).first, ToString<double>((*it).second));
+ }
+
  sc.ClearForces();
  Potential & parray = GetPotentialArray();
  parray.UpdateForces(sc);
