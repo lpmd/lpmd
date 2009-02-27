@@ -10,7 +10,7 @@
 class ConverterInputReader: public CommonInputReader
 {
  public:
-   ConverterInputReader(lpmd::PluginManager & pm);
+   ConverterInputReader(lpmd::PluginManager & pm, lpmd::Map & params);
 };
 
 #endif

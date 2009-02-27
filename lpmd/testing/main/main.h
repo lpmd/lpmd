@@ -27,7 +27,6 @@ class Simulator: public CommonHandler
   void LoadAtomTypes();
   void ShowStartInfo();
   void Monitor(MonitorApplyInfo & mon);
-  void RunningAverage(RunningAverageApplyInfo & rav);
   void LoadUseModules();
   void LoadModules();
   void Process();

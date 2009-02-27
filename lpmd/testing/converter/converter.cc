@@ -6,6 +6,7 @@
 #include "cmdline.h"
 #include "config.h"
 
+#include <lpmd/session.h>
 #include <lpmd/util.h>
 #include <lpmd/containable.h>
 #include <lpmd/instantproperty.h>
@@ -23,15 +24,13 @@ using namespace lpmd;
 
 Converter::Converter(): CommonHandler("lpmd-converter", "LPMD Converter")
 {
- CommonInputReader * inp = new ConverterInputReader(pluginman);
+ CommonInputReader * inp = new ConverterInputReader(pluginman, GlobalSession);
  SetInputReader(*inp);
 }
 
 Converter::~Converter() 
 {
  CommonInputReader & param = GetInputReader();
- std::vector<std::string> properties = SplitTextLine(param["property-list"]);
- for (unsigned int i=0;i<properties.size();++i) delete propfiles[properties[i]];
  CommonInputReader * inp = &param;
  delete inp;
 }
@@ -66,7 +65,7 @@ void Converter::Initialize()
   // Primero prueba si el modulo input es del tipo CellReader
   // En este caso se pueden leer muchas configuraciones
   CellReader & cread = CastModule<CellReader>(pluginman[param["input-module"]]);
-  if (Verbose()) std::cerr << "-> Loading input file: " << param["input-file"] << '\n';
+  if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Loading input file: " << param["input-file"] << '\n';
   configs.push_back(SimulationCell(*scell));
   if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cread.ReadMany(param["input-file"], configs); 
@@ -75,13 +74,17 @@ void Converter::Initialize()
  {
   // Ahora prueba si es del tipo CellGenerator, se generara solo una configuracion
   CellGenerator & cgen = CastModule<CellGenerator>(pluginman[param["input-module"]]);
-  if (Verbose()) std::cerr << "-> Creating input configuration..." << '\n';
+  if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Creating input configuration..." << '\n';
   configs.push_back(SimulationCell(*scell));
   if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cgen.Generate(configs[0]);
  }
- if (Verbose()) 
-  std::cerr << "-> Read " << configs.size() << " configuration(s)." << '\n';
+ if (GlobalSession["debug"] != "none") 
+ {
+  std::ostream & debug = GlobalSession.DebugStream();
+  debug << "-> Read " << configs.size() << " configurations." << '\n';
+  debug << "-> Configuration 0 has " << configs[0].size() << " atoms\n";
+ }
  pluginman.UnloadPlugin(param["input-module"]);
 }
 
@@ -114,7 +117,7 @@ void Converter::Process()
  {
   if (param.GetString("replacecell") == "false") configs[i].SetCell(*scell);
   if (cm != NULL) configs[i].SetCellManager(*cm);
-  configs[i].UseDistanceCache(param.GetBool("distancecache"));
+  configs[i].UseDistanceCache(GlobalSession.GetBool("distancecache"));
   // Aplica los modulos de "prepare"
   for (std::list<ModuleInfo>::const_iterator it=param.preparelist.begin();it != param.preparelist.end();++it)
   {
@@ -131,16 +134,16 @@ void Converter::Process()
   pluginman.UnloadPlugin(minf.id);
  }
 
- if (Verbose())
+ if (GlobalSession["debug"] != "none")
  {
-  ShowConfigsInfo(configs);
-  if (smlist.size() > 0) std::cerr << "-> Will apply the following modifiers: \n";
+  std::ostream & debug = GlobalSession.DebugStream();
+  if (smlist.size() > 0) debug << "-> Will apply the following modifiers: \n";
   for (std::vector<SystemModifier *>::iterator it=smlist.begin();it!=smlist.end();++it)
   {
    SystemModifier & smp = *(*it);
    Module & mod = dynamic_cast<Module &>(smp); // no es necesario CastModule aqui
-   mod.Show(std::cerr);
-   std::cerr << '\n';
+   mod.Show(debug);
+   debug << '\n';
   }
  }
 
@@ -151,7 +154,7 @@ void Converter::Process()
  {
   if (param.GetString("replacecell") == "false") configs[i].SetCell(*scell);
   if (cm != NULL) configs[i].SetCellManager(*cm);
-  configs[i].UseDistanceCache(param.GetBool("distancecache"));
+  configs[i].UseDistanceCache(GlobalSession.GetBool("distancecache"));
   for (std::vector<SystemModifier *>::iterator it=smlist.begin();it!=smlist.end();++it)
   {
    SystemModifier & smp = *(*it);
@@ -176,7 +179,7 @@ void Converter::Finish()
   pluginman.LoadPlugin(minf.name, minf.id, minf.args);
   pluginman[minf.id].SetUsed();
   CellWriter & cwrite = CastModule<CellWriter>(pluginman[minf.id]);
-  if (Verbose()) std::cerr << "-> Writing output file: " << cwrite.GetFile() << '\n';
+  if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Writing output file: " << cwrite.GetFile() << '\n';
   cwrite.WriteMany(cwrite.GetFile(), configs); 
   pluginman.UnloadPlugin(minf.id);
  }

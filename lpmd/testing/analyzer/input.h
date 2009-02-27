@@ -10,7 +10,7 @@
 class AnalyzerInputReader: public CommonInputReader
 {
  public:
-   AnalyzerInputReader(lpmd::PluginManager & pm);
+   AnalyzerInputReader(lpmd::PluginManager & pm, lpmd::Map & params);
 };
 
 #endif

@@ -12,15 +12,17 @@
 #include <lpmd/simulationcell.h>
 #include <lpmd/systemmodifier.h>
 #include <lpmd/visualizer.h>
+#include <lpmd/session.h>
 
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 using namespace lpmd;
 
 VisualHandler::VisualHandler(): CommonHandler("lpmd-visualizer", "LPMD Visualizer")
 {
- CommonInputReader * inp = new VisualizerInputReader(pluginman);
+ CommonInputReader * inp = new VisualizerInputReader(pluginman, GlobalSession);
  SetInputReader(*inp);
 }
 
@@ -81,15 +83,15 @@ void VisualHandler::Process()
   pmod.SetUsed();
  }
 
- if (Verbose())
+ if (GlobalSession["debug"] != "none")
  {
-  if (vislist.size() > 0) std::cerr << "-> Will use the following visualizers: \n";
+  if (vislist.size() > 0) GlobalSession.DebugStream() << "-> Will use the following visualizers: \n";
   for (std::vector<Visualizer *>::iterator it=vislist.begin();it!=vislist.end();++it)
   {
    Visualizer & vis = *(*it);
    Module & mod = dynamic_cast<Module &>(vis); // no es necesario CastModule aqui
-   mod.Show(std::cerr);
-   std::cerr << '\n';
+   mod.Show(GlobalSession.DebugStream());
+   GlobalSession.DebugStream() << '\n';
   }
  }
 
@@ -99,7 +101,7 @@ void VisualHandler::Process()
   // Primero prueba si el modulo input es del tipo CellReader
   // En este caso se pueden leer muchas configuraciones
   CellReader & cread = CastModule<CellReader>(pluginman[param["input-module"]]);
-  if (Verbose()) std::cerr << "-> Loading input file: " << param["input-file"] << '\n';
+  if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Loading input file: " << param["input-file"] << '\n';
   std::ifstream is(param["input-file"].c_str());
   if (! is.good()) throw FileNotFound(param["input-file"]);
   if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
@@ -109,20 +111,20 @@ void VisualHandler::Process()
    scell->NumEspec();
    scell->AssignIndex();
    ProcessConfig();
-   scell->Clear();
+   scell->clear();
   }
  }
  catch (InvalidModuleType & e)
  {
   // Ahora prueba si es del tipo CellGenerator, se generara solo una configuracion
   CellGenerator & cgen = CastModule<CellGenerator>(pluginman[param["input-module"]]);
-  if (Verbose()) std::cerr << "-> Creating input configuration..." << '\n';
+  if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Creating input configuration..." << '\n';
   if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cgen.Generate(*scell);
   scell->NumEspec();
   scell->AssignIndex();
   ProcessConfig();
-  scell->Clear();
+  scell->clear();
  }
 }
 

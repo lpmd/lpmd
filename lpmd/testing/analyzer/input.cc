@@ -9,7 +9,7 @@ using namespace lpmd;
 //
 //
 //
-AnalyzerInputReader::AnalyzerInputReader(PluginManager & pm): CommonInputReader(pm) 
+AnalyzerInputReader::AnalyzerInputReader(PluginManager & pm, Map & params): CommonInputReader(pm, params) 
 { 
  DeclareStatement("property", "module start end each");
 }

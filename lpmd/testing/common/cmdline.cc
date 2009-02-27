@@ -20,7 +20,6 @@ CommonCmdLineParser::CommonCmdLineParser(int argc, char *argv[])
  DefineOption("input", "i", "options");
  DefineOption("output", "o", "options");
  DefineOption("use", "u", "options");
- DefineOption("cellmanager", "c", "options");
  DefineOption("replace-cell", "r", "");
  Parse(argc, argv);
 }

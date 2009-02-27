@@ -1,7 +1,7 @@
 
 AC_INIT
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(lpmd, 0.5.3)
+AM_INIT_AUTOMAKE(lpmd, 0.6.0alpha)
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_RANLIB
@@ -16,7 +16,7 @@ AC_ARG_WITH(lpmd,
 
 #AC_DEFINE([NUMBERED_RELEASE], [0], [Marks this revision as a numbered release])
 
-PKG_CHECK_MODULES(LPMD, liblpmd-1.0 > 1.0.1,
+PKG_CHECK_MODULES(LPMD, liblpmd-2.0 >= 1.1.0,
                   CPPFLAGS="$CPPFLAGS $LPMD_CFLAGS";
                   LDFLAGS="$LDFLAGS $LPMD_LIBS";
                   LPMDDIR="$LPMD_PREFIX", 
@@ -29,10 +29,10 @@ PKG_CHECK_MODULES(LPMD, liblpmd-1.0 > 1.0.1,
                   AC_SUBST(LDFLAGS)
 )
 
-AC_CHECK_LIB([lpmd], [main], [LIBS="${LIBS} -llpmd -ldl"],
-[
- AC_MSG_ERROR([Could not find the lpmd library. You may want to specify the installation directory with --with-lpmd])
-], [-ldl])
+AC_CHECK_LIB([lpmd], [main], [LIBS="${LIBS} -llpmd -ldl"], 
+             [
+	      AC_MSG_ERROR([Could not find the lpmd library. You may want to specify the installation directory with --with-lpmd]) 
+	     ], [-ldl])
 
-AC_OUTPUT(common/Makefile main/Makefile analyzer/Makefile converter/Makefile visualizer/Makefile Makefile)
+AC_OUTPUT(common/Makefile main/Makefile analyzer/Makefile converter/Makefile mixer/Makefile visualizer/Makefile Makefile)
 

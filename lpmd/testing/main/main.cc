@@ -6,6 +6,7 @@
 #include "cmdline.h"
 #include "config.h"
 
+#include <lpmd/session.h>
 #include <lpmd/util.h>
 
 #include <lpmd/containable.h>
@@ -15,13 +16,16 @@
 #include <lpmd/cellmanager.h>
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 
 using namespace lpmd;
 
 Simulator::Simulator(): CommonHandler("lpmd", "LPMD")
 {
- inp = new LPMDInputReader(pluginman);
+ GlobalSession.DefineKeyword("showcoords", "true");
+ GlobalSession.DefineKeyword("showunused", "true");
+ inp = new LPMDInputReader(pluginman, GlobalSession);
  SetInputReader(*inp);
 }
 
@@ -42,6 +46,9 @@ void Simulator::LoadUseModules()
  std::ostringstream str;
  str << "Las Palmeras Molecular Dynamics, version " << VERSION;
  BannerPrint(str.str());
+ std::cout << std::endl;
+ BannerPrint("GLOBAL OPTIONS");
+ GlobalSession.Show(std::cout);
  std::cout << std::endl;
  LoadAtomTypes();
  CommonHandler::LoadUseModules();
@@ -69,7 +76,7 @@ void Simulator::LoadModules()
   IApplicable & ap = CastModule<IApplicable>(pmod);
   integlist.push_back(&integ);
   pmod.SetUsed();
-  std::cout << "From step:" << ap.start_step << std::endl;
+  std::cout << "From step: " << ap.start_step << std::endl;
   pmod.Show(std::cout);
   std::cout << '\n';
  }
@@ -93,8 +100,7 @@ void Simulator::LoadModules()
   pmod.SetUsed();
  }
 
- BannerPrint("SIMULATION MONITOR AND RUNNING AVERAGES INFORMATION");
- std::cout << "Instant monitoring of properties:\n";
+ BannerPrint("SIMULATION MONITOR INFORMATION");
  for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
  {
   MonitorApplyInfo & mon = (*it);
@@ -117,29 +123,7 @@ void Simulator::LoadModules()
   }
   std::cout << '\n';
  }
- std::cout << "Running averages of properties:\n";
- for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
- {
-  RunningAverageApplyInfo & rav = (*it);
-  if (rav.output == "") std::cout << "To standard output: \n";
-  else std::cout << "To file " << rav.output << ": \n";
-  std::list<std::string> namedprops = rav.properties;
-  for (std::list<std::string>::const_iterator it=namedprops.begin();it!=namedprops.end();++it)
-  {
-   const std::string propname(*it);
-   Module & pmod = pluginman.Provider(propname);
-   std::cout << "  -> " << propname << " from module \"" << pmod.Name();
-   InstantProperty & ip = CastModule<InstantProperty>(pmod);
-   if (rav.end_step == -1) rav.end_step = param.GetInteger("steps-n");
-   ip.start_step = rav.start_step;
-   ip.end_step = rav.end_step;
-   ip.interval = rav.interval;
-   std::cout << "\" (start=" << ip.start_step << ", end=" << ip.end_step << ", each=" << ip.interval << ", over=" << rav.average_over << ")\n";
-   monitorlist.push_back(&ip);
-   pmod.SetUsed();
-  }
-  std::cout << '\n';
- }
+
  std::vector<std::string> visualizers = SplitTextLine(param["visualize-list"]);
  for (unsigned int i=0;i<visualizers.size();++i)
  {
@@ -200,13 +184,11 @@ void Simulator::Initialize()
    std::cout << "Set charge of " << spec << " with "<<chargespec<< '\n';
   }
   int N=0;
-  for(int i=0;i<sc.Size();i++)
+  for (unsigned long int i=0;i<sc.size();i++)
   {
-   if((sc.GetAtom(i)).Symb() == spec) 
+   if (sc[i].Symb() == spec) 
    {
-    Atom tmp = sc.GetAtom(i); 
-    tmp.SetCharge(param.GetDouble("charge-"+spec)); 
-    sc.SetAtom(tmp,i);
+    sc[i].SetCharge(param.GetDouble("charge-"+spec)); 
     N++;
    }
   }
@@ -253,17 +235,17 @@ void Simulator::Initialize()
   else EndWithError("AtomType \""+atinf.name+"\" was not defined. Maybe you forgot a \"type\" block?");
  }
  
- sc.UseDistanceCache(param.GetBool("distancecache"));
+ sc.UseDistanceCache(GlobalSession.GetBool("distancecache"));
 
- if (param.GetBool("showcoords"))
+ if (GlobalSession.GetBool("showcoords"))
  {
   BannerPrint("ATOMIC COORDINATES INFORMATION");
   std::cout << "Atoms   ->" << std::endl;
-  std::cout << "   N = " << sc.Size() << std::endl << std::endl;
+  std::cout << "   N = " << sc.size() << std::endl << std::endl;
   std::cout << "Coordinates ->" << std::endl;
-  for (int i=0;i<sc.Size();++i)
+  for (unsigned long int i=0;i<sc.size();++i)
   {
-   const Atom & a = sc.GetAtom(i);
+   const Atom & a = sc[i];
    std::cout << "   " << a.Symb() << "  " << a.Position();
    if (a.IsTypeSet()) std::cout << " (type " << a.Type().name << ")";
    std::cout << std::endl;
@@ -359,7 +341,7 @@ void Simulator::ShowStartInfo()
   pmod.Show(std::cout);
   std::cout << '\n';
  }
- if (param.GetBool("showunused"))
+ if (GlobalSession.GetBool("showunused"))
  {
   BannerPrint("UNUSED MODULES INFORMATION");
   for (std::list<ModuleInfo>::const_iterator it=param.uselist.begin();it != param.uselist.end();++it)
@@ -422,11 +404,6 @@ void Simulator::Process()
   MonitorApplyInfo & mon = (*it);
   if (mon.output != "") mon.mout = new std::ofstream(mon.output.c_str(), std::ios::out);
  }
- for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
- {
-  RunningAverageApplyInfo & rav = (*it);
-  if (rav.output != "") rav.mout = new std::ofstream(rav.output.c_str(), std::ios::out);
- } 
 
  int initial_step;
  if (param["restore-dumpfile"] == "") 
@@ -447,24 +424,10 @@ void Simulator::Process()
   for (std::list<std::string>::const_iterator it=mon.properties.begin();it!=mon.properties.end();++it) { *(mon.mout) << std::setw(21) << *it; }
   *(mon.mout) << "\n\n";
  }
- for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
- {
-  RunningAverageApplyInfo & rav = (*it);
-  *(rav.mout) << "# step     ";
-  for (std::list<std::string>::const_iterator it=rav.properties.begin();it!=rav.properties.end();++it) { *(rav.mout) << std::setw(21) << *it; }
-  *(rav.mout) << "\n\n";
- }
 
  //
  // MD Loop
  //
-
- // Assign the values for bond lengths into sc.MetaData()
- for (std::map<std::string, double>::const_iterator it=inp->bondtable.begin();it!=inp->bondtable.end();++it)
- {
-  sc.MetaData().AssignParameter((*it).first, ToString<double>((*it).second));
- }
-
  sc.ClearForces();
  Potential & parray = GetPotentialArray();
  parray.UpdateForces(sc);
@@ -476,8 +439,9 @@ void Simulator::Process()
    AtomTypeApplyInfo & atinf = (*it);
    if ((step+1) >= atinf.start_step)
    {
-    if (Verbose()) std::cerr << "-> Setting AtomType " << atinf.name << " for atoms " << atinf.from_index << " to " << atinf.to_index << '\n';
-    for (long q=atinf.from_index;q<=atinf.to_index;++q) sc.SetAtomType(q, *(atinf.t));
+    if (GlobalSession["debug"] != "none") 
+       GlobalSession.DebugStream() << "-> Setting AtomType " << atinf.name << " for atoms " << atinf.from_index << " to " << atinf.to_index << '\n';
+    for (long q=atinf.from_index;q<=atinf.to_index;++q) sc[q].SetType(*(atinf.t));
     atinf.start_step = nsteps+1; // FIXME: si alguien piensa en un mejor parche que este...
    }
   }
@@ -490,7 +454,7 @@ void Simulator::Process()
    IApplicable & ap = CastModule<IApplicable>(pmod);
    if ((step+1) >= ap.start_step)
    { 
-    if (Verbose()) std::cerr << "-> Changing active integrator to " << pmod.Name() << '\n';
+    if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Changing active integrator to " << pmod.Name() << '\n';
     SetIntegrator(integ);
     ap.start_step = nsteps+1; // FIXME: si alguien piensa en un mejor parche que este...
    }
@@ -546,24 +510,8 @@ void Simulator::Process()
   for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
   {
    MonitorApplyInfo & mon = (*it);
-   if (MustDo(step, mon.start_step, mon.end_step, mon.interval))
-   {
-    // Actualiza todos los modulos llamados implicitamente por monitor
-    for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it) (*it)->Evaluate(sc, p_array);
-    Monitor(mon);
-   }
+   if (MustDo(step, mon.start_step, mon.end_step, mon.interval)) Monitor(mon);
   }
-  for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
-  {
-   RunningAverageApplyInfo & rav = (*it);
-   if (MustDo(step, rav.start_step, rav.end_step, rav.interval))
-   {
-    // Actualiza todos los modulos llamados implicitamente por monitor
-    for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it) (*it)->Evaluate(sc, p_array);
-    RunningAverage(rav);
-   }
-  }
-  sc.MetaData().AssignParameter("step", ToString<int>(step));
   DoStep();
  }
  if (outfile != NULL) delete [] outfile;
@@ -574,17 +522,22 @@ void Simulator::Process()
   MonitorApplyInfo & mon = (*it);
   if (mon.output != "") delete mon.mout;
  }
- for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
- {
-  RunningAverageApplyInfo & rav = (*it);
-  if (rav.output != "") delete rav.mout;
- }
 }
 
 void Simulator::Monitor(MonitorApplyInfo & mon)
 {
  CommonInputReader & param = GetInputReader();
+ SimulationCell & sc = GetCell();
+ PotentialArray & p_array = GetPotentialArray();
+
+ // Actualiza todos los modulos llamados implicitamente por monitor
+ for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it)
+ {
+  (*it)->Evaluate(sc, p_array); 
+ }
+
  *(mon.mout) << std::setw(10) << std::left << step;
+ 
  for (std::list<std::string>::const_iterator it=mon.properties.begin();it!=mon.properties.end();++it)
  {
   Module & pmod = pluginman.Provider(*it);
@@ -592,20 +545,7 @@ void Simulator::Monitor(MonitorApplyInfo & mon)
   *(mon.mout) << std::setw(21) << pvalue;
  }
  *(mon.mout) << '\n';
-}
-
-void Simulator::RunningAverage(RunningAverageApplyInfo & rav)
-{
- CommonInputReader & param = GetInputReader();
- *(rav.mout) << std::setw(10) << std::left << step;
- for (std::list<std::string>::const_iterator it=rav.properties.begin();it!=rav.properties.end();++it)
- {
-  Module & pmod = pluginman.Provider(*it);
-  double pvalue = pmod.GetProperty(*it);
-  rav.AddNewValue(pvalue);
-  *(rav.mout) << std::setw(21) << rav.Average();
- }
- *(rav.mout) << '\n';
+ mon.mout->flush();
 }
 
 void Simulator::Finish()

@@ -10,7 +10,7 @@
 class VisualizerInputReader: public CommonInputReader
 {
  public:
-   VisualizerInputReader(lpmd::PluginManager & pm);
+   VisualizerInputReader(lpmd::PluginManager & pm, lpmd::Map & params);
 };
 
 #endif
