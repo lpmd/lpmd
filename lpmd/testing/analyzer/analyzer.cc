@@ -6,8 +6,8 @@
 #include "cmdline.h"
 #include "config.h"
 
-#include <lpmd/session.h>
 #include <lpmd/util.h>
+#include <lpmd/session.h>
 #include <lpmd/containable.h>
 #include <lpmd/instantproperty.h>
 #include <lpmd/scalartable.h>
@@ -77,7 +77,7 @@ void Analyzer::Initialize()
   // Primero prueba si el modulo input es del tipo CellReader
   // En este caso se pueden leer muchas configuraciones
   CellReader & cread = CastModule<CellReader>(pluginman[param["input-module"]]);
-  if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Loading input file: " << param["input-file"] << '\n';
+  if (Verbose()) std::cerr << "-> Loading input file: " << param["input-file"] << '\n';
   configs.push_back(SimulationCell(*scell));
   if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cread.ReadMany(param["input-file"], configs); 
@@ -86,18 +86,15 @@ void Analyzer::Initialize()
  {
   // Ahora prueba si es del tipo CellGenerator, se generara solo una configuracion
   CellGenerator & cgen = CastModule<CellGenerator>(pluginman[param["input-module"]]);
-  if (GlobalSession["debug"] != "none") GlobalSession.DebugStream() << "-> Creating input configuration..." << '\n';
+  if (Verbose()) std::cerr << "-> Creating input configuration..." << '\n';
   configs.push_back(SimulationCell(*scell));
   if (param.GetBool("replacecell")) pluginman[param["input-module"]].AssignParameter("replacecell", "true");
   cgen.Generate(configs[0]);
   configs[0].NumEspec();
   configs[0].AssignIndex();
  }
- if (GlobalSession["debug"] != "none") 
- {
-  GlobalSession.DebugStream() << "-> Read " << configs.size() << " configurations." << '\n';
-  GlobalSession.DebugStream() << "-> First configuration has " << configs[0].size() << " atoms\n";
- }
+ if (Verbose()) 
+  std::cerr << "-> Read " << configs.size() << " configuration(s)." << '\n';
  pluginman.UnloadPlugin(param["input-module"]);
 }
 
@@ -130,7 +127,7 @@ void Analyzer::Process()
  {
   if (param.GetString("replacecell") == "false") configs[i].SetCell(*scell);
   if (cm != NULL) configs[i].SetCellManager(*cm);
-  configs[i].UseDistanceCache(GlobalSession.GetBool("distancecache"));
+  configs[i].UseDistanceCache(param.GetBool("distancecache"));
   // Aplica los modulos de "prepare"
   for (std::list<ModuleInfo>::const_iterator it=param.preparelist.begin();it != param.preparelist.end();++it)
   {
@@ -147,26 +144,26 @@ void Analyzer::Process()
   pluginman.UnloadPlugin(minf.id);
  }
 
- if (GlobalSession["debug"] != "none")
+ if (Verbose())
  { 
-  std::ostream & debug = GlobalSession.DebugStream();
-  if (iproplist.size() > 0) debug << "-> Will calculate the following instant properties: \n";
+  ShowConfigsInfo(configs);
+  if (iproplist.size() > 0) std::cerr << "-> Will calculate the following instant properties: \n";
   for (std::vector<InstantProperty *>::iterator it=iproplist.begin();it!=iproplist.end();++it)
   {
    std::ostream * outp;
    InstantProperty & prop = *(*it);
    Module & propmod = dynamic_cast<Module &>(prop); // no es necesario CastModule aqui
-   propmod.Show(debug);
-   debug << '\n';
+   propmod.Show(std::cerr);
+   std::cerr << '\n';
   }
-  if (tproplist.size() > 0) debug << "-> Will calculate the following temporal properties: \n";
+  if (tproplist.size() > 0) std::cerr << "-> Will calculate the following temporal properties: \n";
   for (std::vector<TemporalProperty *>::iterator it=tproplist.begin();it!=tproplist.end();++it)
   {
    std::ostream * outp;
    TemporalProperty & prop = *(*it);
    Module & propmod = dynamic_cast<Module &>(prop); // no es necesario CastModule aqui
-   propmod.Show(debug);
-   debug << '\n';
+   propmod.Show(std::cerr);
+   std::cerr << '\n';
   }
  }
  //
@@ -180,8 +177,7 @@ void Analyzer::Process()
   if (propmod.Defined("output") && (propmod["output"] != ""))  
   {
    outp = new std::ofstream(propmod["output"].c_str());
-   if (GlobalSession["debug"] != "none") 
-      GlobalSession.DebugStream() << "-> Writing output of " << propmod.Name() << " to " << propmod["output"] << '\n';
+   if (Verbose()) std::cerr << "-> Writing output of " << propmod.Name() << " to " << propmod["output"] << '\n';
   }
   else outp = &(std::cout);
   ScalarTable & propval = CastModule<ScalarTable>(propmod);
@@ -209,8 +205,7 @@ void Analyzer::Process()
   if (propmod.Defined("output") && (propmod["output"] != ""))
   {
    outp = new std::ofstream(propmod["output"].c_str());
-   if (GlobalSession["debug"] != "none") 
-      GlobalSession.DebugStream() << "-> Writing output of " << propmod.Name() << " to " << propmod["output"] << '\n';
+   if (Verbose()) std::cerr << "-> Writing output of " << propmod.Name() << " to " << propmod["output"] << '\n';
   }
   else outp = &(std::cout);
   ScalarTable & propval = CastModule<ScalarTable>(propmod);

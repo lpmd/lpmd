@@ -13,4 +13,3 @@ AnalyzerInputReader::AnalyzerInputReader(PluginManager & pm, Map & params): Comm
 { 
  DeclareStatement("property", "module start end each");
 }
-

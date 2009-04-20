@@ -27,6 +27,7 @@ class Simulator: public CommonHandler
   void LoadAtomTypes();
   void ShowStartInfo();
   void Monitor(MonitorApplyInfo & mon);
+  void RunningAverage(RunningAverageApplyInfo & rav);
   void LoadUseModules();
   void LoadModules();
   void Process();
@@ -35,7 +36,7 @@ class Simulator: public CommonHandler
  private: 
   lpmd::Timer t;
   LPMDInputReader * inp;
-  std::map<std::string, std::ostream *> propfiles;
+  std::vector<std::ostream *> propfiles;
   std::map<std::string, lpmd::AtomType *> atomtypemap;
   std::vector<lpmd::SystemModifier *> modiflist;
   std::vector<lpmd::InstantProperty *> proplist;

@@ -2,6 +2,13 @@
 
 rm -rf configure Makefile Makefile.in .deps .libs libtool config.* depcomp config.guess config.sub ltmain.sh INSTALL config.h.in autom4te.cache missing aclocal.m4 install-sh stamp-h1
 
+for i in common analyzer converter main mixer visualizer
+do
+  rm -rf $i/.deps
+  rm -f $i/Makefile
+  rm -f $i/Makefile.in
+done
+
 if [ "$1" != "clean" ]; then
    if [ -f /usr/share/libtool/libtool.m4 ]; then
       cp /usr/share/libtool/libtool.m4 acinclude.m4
