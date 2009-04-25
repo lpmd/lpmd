@@ -9,8 +9,9 @@
 #include <lpmd/util.h>
 #include <lpmd/session.h>
 #include <lpmd/containable.h>
+#include <lpmd/value.h>
+#include <lpmd/matrix.h>
 #include <lpmd/instantproperty.h>
-#include <lpmd/scalartable.h>
 #include <lpmd/cellreader.h>
 #include <lpmd/cellmanager.h>
 #include <lpmd/systemmodifier.h>
@@ -180,7 +181,7 @@ void Analyzer::Process()
    if (Verbose()) std::cerr << "-> Writing output of " << propmod.Name() << " to " << propmod["output"] << '\n';
   }
   else outp = &(std::cout);
-  ScalarTable & propval = CastModule<ScalarTable>(propmod);
+  Value<Matrix> & propval = CastModule< Value<Matrix> >(propmod);
   IContainable & icont = CastModule<IContainable>(propmod);
   for (unsigned long i=0;i<configs.size();++i)
   {
@@ -208,10 +209,10 @@ void Analyzer::Process()
    if (Verbose()) std::cerr << "-> Writing output of " << propmod.Name() << " to " << propmod["output"] << '\n';
   }
   else outp = &(std::cout);
-  ScalarTable & propval = CastModule<ScalarTable>(propmod);
+  Value<Matrix> & propval = CastModule< Value<Matrix> >(propmod);
   IContainable & icont = CastModule<IContainable>(propmod);
   prop.Evaluate(configs, p_array);
-  const Matrix & v = propval.Value();
+  const Matrix & v = propval.CurrentValue();
   (*outp) << v;
   if (propmod.Defined("output") && (propmod["output"] != "")) delete outp;
  }
