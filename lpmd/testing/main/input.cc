@@ -98,7 +98,7 @@ int LPMDInputReader::OnStatement(const std::string & name, const std::string & k
    atinf.t = NULL;
    atinf.from_index = param.GetInteger("atom-from");
    atinf.to_index = param.GetInteger("atom-to");
-   atinf.start_step = param.GetInteger("atom-start");
+   atinf.start = param.GetInteger("atom-start");
    atinf.name = param["atom-type"];
    atapply.push_back(atinf);
   }

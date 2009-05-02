@@ -7,12 +7,14 @@
 #include "config.h"
 
 #include <lpmd/util.h>
+#include <lpmd/session.h>
 #include <lpmd/potentialarray.h>
 #include <lpmd/simulationcell.h>
 #include <lpmd/cellformat.h>
 #include <lpmd/cellmanager.h>
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <unistd.h>
 
@@ -56,10 +58,10 @@ void CommonHandler::LoadModules()
 {
  PotentialArray & p_array = GetPotentialArray();
  CommonInputReader & param = GetInputReader();
- std::list<std::string> ptlist = ListOfTokens(param["potential-list"]);
+ std::list<std::string> ptlist = StringSplit< std::list<std::string> >(param["potential-list"]);
  for (std::list<std::string>::const_iterator it=ptlist.begin();it!=ptlist.end();++it)
  {
-  std::list<std::string> tmp = ListOfTokens(*it, '#');
+  std::list<std::string> tmp = StringSplit< std::list<std::string> >(*it, '#');
   const std::string sp1 = tmp.front();
   tmp.pop_front();
   const std::string sp2 = tmp.front();
@@ -81,20 +83,20 @@ void CommonHandler::ShowConfigsInfo(std::vector<SimulationCell> & configs)
   SimulationCell & sc = configs[i];
   Vector pos, cm(0.0, 0.0, 0.0);
   double tmass = 0.0, xmin, xmax, ymin, ymax, zmin, zmax;
-  xmin = xmax = sc[0].Position().GetX();
-  ymin = ymax = sc[0].Position().GetY();
-  zmin = zmax = sc[0].Position().GetZ();
+  xmin = xmax = sc[0].Position()[0];
+  ymin = ymax = sc[0].Position()[1];
+  zmin = zmax = sc[0].Position()[2];
   for (unsigned long int j=0;j<sc.size();++j)
   {
    pos = sc[j].Position();
    cm = cm + sc[j].Mass()*pos;
    tmass += sc[j].Mass();
-   if (pos.GetX() < xmin) xmin = pos.GetX();
-   if (pos.GetX() > xmax) xmax = pos.GetX();
-   if (pos.GetY() < ymin) ymin = pos.GetY();
-   if (pos.GetY() > ymax) ymax = pos.GetY();
-   if (pos.GetZ() < zmin) zmin = pos.GetZ();
-   if (pos.GetZ() > zmax) zmax = pos.GetZ();
+   if (pos[0] < xmin) xmin = pos[0];
+   if (pos[0] > xmax) xmax = pos[0];
+   if (pos[1] < ymin) ymin = pos[1];
+   if (pos[1] > ymax) ymax = pos[1];
+   if (pos[2] < zmin) zmin = pos[2];
+   if (pos[2] > zmax) zmax = pos[2];
   }
   cm = cm / tmass;
   std::cerr << "Configuration " << i << ": \n";
@@ -106,9 +108,9 @@ void CommonHandler::ShowConfigsInfo(std::vector<SimulationCell> & configs)
   std::cerr << "-> X coordinate     : [ " << xmin << " , " << xmax << " ] (width: " << xmax-xmin << ")\n";
   std::cerr << "-> Y coordinate     : [ " << ymin << " , " << ymax << " ] (width: " << ymax-ymin << ")\n";
   std::cerr << "-> Z coordinate     : [ " << zmin << " , " << zmax << " ] (width: " << zmax-zmin << ")\n";
-  std::cerr << "-> X displ. from CM : [ " << xmin-cm.Get(0) << " , " << xmax-cm.Get(0) << " ]\n";
-  std::cerr << "-> Y displ. from CM : [ " << ymin-cm.Get(1) << " , " << ymax-cm.Get(1) << " ]\n";
-  std::cerr << "-> Z displ. from CM : [ " << zmin-cm.Get(2) << " , " << zmax-cm.Get(2) << " ]\n";
+  std::cerr << "-> X displ. from CM : [ " << xmin-cm[0] << " , " << xmax-cm[0] << " ]\n";
+  std::cerr << "-> Y displ. from CM : [ " << ymin-cm[1] << " , " << ymax-cm[1] << " ]\n";
+  std::cerr << "-> Z displ. from CM : [ " << zmin-cm[2] << " , " << zmax-cm[2] << " ]\n";
   std::cerr << '\n';
  }
 }
@@ -192,7 +194,7 @@ void CommonHandler::ShowHelp()
 {
  std::cerr << name << " version " << VERSION;
  std::cerr << '\n';
- std::cerr << "Using liblpmd version " << lpmd::LibraryVersion() << std::endl << std::endl;
+ std::cerr << "Using liblpmd version " << lpmd::GlobalSession["libraryversion"] << std::endl << std::endl;
  std::cerr << "Usage: " << cmdname << " [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]";
  std::cerr << " [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]";
  std::cerr << " [--option | -O <option=value,option=value,...>] [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]";
@@ -227,10 +229,10 @@ void CommonHandler::SetOptionVariables(CommonCmdLineParser & clp, ParamList & ov
 {
  if (clp.Defined("option"))
  {
-  std::list<std::string> kwlist = ListOfTokens(clp["option-keywordvalue"], ',');
+  std::list<std::string> kwlist = StringSplit< std::list<std::string> >(clp["option-keywordvalue"], ',');
   for (std::list<std::string>::const_iterator it=kwlist.begin();it!=kwlist.end();++it)
   {
-   std::vector<std::string> kwpair = SplitTextLine(*it, '=');
+   std::vector<std::string> kwpair = StringSplit< std::vector<std::string> >(*it, '=');
    ov.AssignParameter(kwpair[0], kwpair[1]);
   } 
  }
@@ -253,12 +255,12 @@ long int StringSimpleHash(const std::string & text)
 const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp)
 {
  std::string tline = t+" ";
- std::vector<std::string> ospl = SplitTextLine(clp[t+"-options"], ':');
+ std::vector<std::string> ospl = StringSplit< std::vector<std::string> >(clp[t+"-options"], ':');
  std::vector<std::string> args;
  if (ospl.size() > 1)
  {
   std::vector<std::string> values = FindBetween(ospl[1]);
-  args = SplitTextLine(ospl[1],',');
+  args = StringSplit< std::vector<std::string> >(ospl[1],',');
   for(unsigned int i=0;i<args.size();++i) 
   {
    size_t p;
@@ -283,12 +285,12 @@ const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, Co
 const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp, ModuleInfo & minf)
 {
  const std::string ll = ParseQuickModeOptions(t, clp);
- std::vector<std::string> args, ospl = SplitTextLine(clp[t+"-options"], ':');
- if (ospl.size() > 1) args = SplitTextLine(ospl[1], ',');
+ std::vector<std::string> args, ospl = StringSplit< std::vector<std::string> >(clp[t+"-options"], ':');
+ if (ospl.size() > 1) args = StringSplit< std::vector<std::string> >(ospl[1], ',');
  std::string useargs = "";
  for (unsigned int i=0;i<args.size();++i)
  {
-  std::vector<std::string> tmp = SplitTextLine(args[i], '=');
+  std::vector<std::string> tmp = StringSplit< std::vector<std::string> >(args[i], '=');
   useargs += (tmp[0]+" "+tmp[1]+" ");
  }
  minf.name = minf.id = ospl[0];
@@ -377,7 +379,7 @@ void CommonHandler::Execute(CommonCmdLineParser & clp)
  {
   if (clp.Defined("lengths") || clp.Defined("angles")) 
      EndWithError("Option -V (--vector) is mutually exclusive with -L (--lengths) and -A (--angles)");
-  std::vector<std::string> vv = SplitTextLine(clp["vector-ax,ay,az,bx,by,bz,cx,cy,cz"], ',');
+  std::vector<std::string> vv = StringSplit< std::vector<std::string> >(clp["vector-ax,ay,az,bx,by,bz,cx,cy,cz"], ',');
   param.AssignParameter("cell-ax", vv[0]);
   param.AssignParameter("cell-ay", vv[1]);
   param.AssignParameter("cell-az", vv[2]);
@@ -396,7 +398,7 @@ void CommonHandler::Execute(CommonCmdLineParser & clp)
    param.AssignParameter("cell-beta", "90.0");
    param.AssignParameter("cell-gamma", "90.0");
   }
-  std::vector<std::string> ll = SplitTextLine(clp["lengths-a,b,c"], ',');
+  std::vector<std::string> ll = StringSplit< std::vector<std::string> >(clp["lengths-a,b,c"], ',');
   param.AssignParameter("cell-a", ll[0]);
   if (ll.size() > 1)
   {
@@ -412,7 +414,7 @@ void CommonHandler::Execute(CommonCmdLineParser & clp)
  if (clp.Defined("angles"))
  {
   if (!clp.Defined("lengths")) EndWithError("Option -A (--angles) must be used together with -L (--lengths)");
-  std::vector<std::string> aa = SplitTextLine(clp["angles-alpha,beta,gamma"], ',');
+  std::vector<std::string> aa = StringSplit< std::vector<std::string> >(clp["angles-alpha,beta,gamma"], ',');
   param.AssignParameter("cell-alpha", aa[0]);
   param.AssignParameter("cell-beta", aa[1]);
   param.AssignParameter("cell-gamma", aa[2]);

@@ -42,7 +42,7 @@ void Mixer::LoadModules()
  //
  // Carga modulos SystemMixer
  // 
- std::vector<std::string> mixers = SplitTextLine(param["apply-list"]);
+ std::vector<std::string> mixers = StringSplit< std::vector<std::string> >(param["apply-list"]);
  for (unsigned int i=0;i<mixers.size();++i)
  {
   Module & pmod = pluginman[mixers[i]];

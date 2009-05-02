@@ -16,6 +16,7 @@
 #include <lpmd/cellmanager.h>
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 
@@ -32,9 +33,9 @@ Simulator::Simulator(): CommonHandler("lpmd", "LPMD")
 Simulator::~Simulator() 
 {
  CommonInputReader & param = GetInputReader();
- std::vector<std::string> properties = SplitTextLine(param["property-list"]);
+ std::vector<std::string> properties = StringSplit< std::vector<std::string> >(param["property-list"]);
  for (unsigned int i=0;i<propfiles.size();++i) delete propfiles[i];
- std::vector<std::string> atomtypes = SplitTextLine(param["type-list"]);
+ std::vector<std::string> atomtypes = StringSplit< std::vector<std::string> >(param["type-list"]);
  for (unsigned int i=0;i<atomtypes.size();++i) delete atomtypemap[atomtypes[i]];
  CommonInputReader * inp = &param;
  delete inp;
@@ -65,20 +66,20 @@ void Simulator::LoadModules()
  if (! param.Defined("integrator-module")) EndWithError("No integrator was defined. Maybe you forgot to put an \"integrator\" statement?");
 
  BannerPrint("INTEGRATOR INFORMATION");
- std::vector<std::string> integrators = SplitTextLine(param["integrator-list"]);
+ std::vector<std::string> integrators = StringSplit< std::vector<std::string> >(param["integrator-list"]);
  for (unsigned int i=0;i<integrators.size();++i)
  {
   Module & pmod = pluginman[integrators[i]];
   Integrator & integ = CastModule<Integrator>(pmod);
-  IApplicable & ap = CastModule<IApplicable>(pmod);
+  Stepper & ap = CastModule<Stepper>(pmod);
   integlist.push_back(&integ);
   pmod.SetUsed();
-  std::cout << "From step:" << ap.start_step << std::endl;
+  std::cout << "From step:" << ap.start << std::endl;
   pmod.Show(std::cout);
   std::cout << '\n';
  }
 
- std::vector<std::string> modifiers = SplitTextLine(param["apply-list"]);
+ std::vector<std::string> modifiers = StringSplit< std::vector<std::string> >(param["apply-list"]);
  for (unsigned int i=0;i<modifiers.size();++i)
  {
   Module & pmod = pluginman[modifiers[i]];
@@ -87,7 +88,7 @@ void Simulator::LoadModules()
   pmod.SetUsed();
  }
 
- std::vector<std::string> properties = SplitTextLine(param["property-list"]);
+ std::vector<std::string> properties = StringSplit< std::vector<std::string> >(param["property-list"]);
  for (unsigned int i=0;i<properties.size();++i)
  {
   Module & pmod = pluginman[properties[i]];
@@ -111,11 +112,11 @@ void Simulator::LoadModules()
    Module & pmod = pluginman.Provider(propname);
    std::cout << "  -> " << propname << " from module \"" << pmod.Name();
    InstantProperty & ip = CastModule<InstantProperty>(pmod);
-   if (mon.end_step == -1) mon.end_step = param.GetInteger("steps-n");
-   ip.start_step = mon.start_step;
-   ip.end_step = mon.end_step;
-   ip.interval = mon.interval;
-   std::cout << "\" (start=" << ip.start_step << ", end=" << ip.end_step << ", each=" << ip.interval << ")\n";
+   if (mon.end == -1) mon.end = param.GetInteger("steps-n");
+   ip.start = mon.start;
+   ip.end = mon.end;
+   ip.each = mon.each;
+   std::cout << "\" (start=" << ip.start << ", end=" << ip.end << ", each=" << ip.each << ")\n";
    monitorlist.push_back(&ip);
    pmod.SetUsed();
   }
@@ -134,17 +135,17 @@ void Simulator::LoadModules()
    Module & pmod = pluginman.Provider(propname);
    std::cout << "  -> " << propname << " from module \"" << pmod.Name();
    InstantProperty & ip = CastModule<InstantProperty>(pmod);
-   if (rav.end_step == -1) rav.end_step = param.GetInteger("steps-n");
-   ip.start_step = rav.start_step;
-   ip.end_step = rav.end_step;
-   ip.interval = rav.interval;
-   std::cout << "\" (start=" << ip.start_step << ", end=" << ip.end_step << ", each=" << ip.interval << ", over=" << rav.average_over << ")\n";
+   if (rav.end == -1) rav.end = param.GetInteger("steps-n");
+   ip.start = rav.start;
+   ip.end = rav.end;
+   ip.each = rav.each;
+   std::cout << "\" (start=" << ip.start << ", end=" << ip.end << ", each=" << ip.each << ", over=" << rav.average_over << ")\n";
    monitorlist.push_back(&ip);
    pmod.SetUsed();
   }
   std::cout << '\n';
  }
- std::vector<std::string> visualizers = SplitTextLine(param["visualize-list"]);
+ std::vector<std::string> visualizers = StringSplit< std::vector<std::string> >(param["visualize-list"]);
  for (unsigned int i=0;i<visualizers.size();++i)
  {
   Module & pmod = pluginman[visualizers[i]];
@@ -179,7 +180,8 @@ void Simulator::Initialize()
   std::cout << "Restore file ->" << std::endl;
   std::cout << "          file = " << param["restore-dumpfile"] << std::endl;
 
-  LoadDump(param["restore-dumpfile"]);
+ // FIXME: MD::LoadDump fue comentada en el api 0.6
+ //  LoadDump(param["restore-dumpfile"]);
  }
 
  SimulationCell & sc = GetCell();
@@ -245,7 +247,7 @@ void Simulator::Initialize()
  {
   AtomTypeApplyInfo & atinf = (*it);
   std::cout << "Type " << atinf.name << " (from atoms " << atinf.from_index << " to " << atinf.to_index << ", starting from step ";
-  std::cout << atinf.start_step << ") : \n";
+  std::cout << atinf.start << ") : \n";
   if (atomtypemap.count(atinf.name) > 0)
   {
    AtomType * this_type = atomtypemap[atinf.name]; 
@@ -310,11 +312,11 @@ void Simulator::InitializeFromInput()
 void Simulator::LoadAtomTypes()
 {
  CommonInputReader & param = GetInputReader();
- std::vector<std::string> atomtypes = SplitTextLine(param["type-list"]);
+ std::vector<std::string> atomtypes = StringSplit< std::vector<std::string> >(param["type-list"]);
  for (unsigned int i=0;i<atomtypes.size();++i)
  {
   AtomType * this_type = new AtomType(atomtypes[i]);
-  std::vector<std::string> t_args = SplitTextLine(param["type-"+atomtypes[i]+"-args"]);
+  std::vector<std::string> t_args = StringSplit< std::vector<std::string> >(param["type-"+atomtypes[i]+"-args"]);
   for (unsigned int j=0;j<t_args.size();++j)
   {
    if (t_args[j] == "fixedpos") this_type->AssignParameter("fixedpos", t_args[(j++)+1]); 
@@ -338,7 +340,7 @@ void Simulator::ShowStartInfo()
  for (std::vector<SystemModifier *>::iterator it=modiflist.begin();it!=modiflist.end();++it)
  {
   SystemModifier & sm = *(*it);
-  std::cout << "From step " << sm.start_step << " to step " << sm.end_step << " each " << sm.interval << " steps:" << std::endl;
+  std::cout << "From step " << sm.start << " to step " << sm.end << " each " << sm.each << " steps:" << std::endl;
   Module & pmod = dynamic_cast<Module &>(sm); // no es necesario CastModule aqui
   pmod.Show(std::cout);
   std::cout << '\n';
@@ -347,7 +349,7 @@ void Simulator::ShowStartInfo()
  for (std::vector<Visualizer *>::iterator it=vislist.begin();it!=vislist.end();++it)
  {
   Visualizer & vis = *(*it);
-  std::cout << "From step " << vis.start_step << " to step " << vis.end_step << " each " << vis.interval << " steps:" << std::endl;
+  std::cout << "From step " << vis.start << " to step " << vis.end << " each " << vis.each << " steps:" << std::endl;
   Module & pmod = dynamic_cast<Module &>(vis); // no es necesario CastModule aqui
   pmod.Show(std::cout);
   std::cout << '\n';
@@ -356,7 +358,7 @@ void Simulator::ShowStartInfo()
  for (std::vector<InstantProperty *>::iterator it=proplist.begin();it!=proplist.end();++it)
  {
   InstantProperty & ip = *(*it);
-  std::cout << "From step " << ip.start_step << " to step " << ip.end_step << " each " << ip.interval << " steps:" << std::endl;
+  std::cout << "From step " << ip.start << " to step " << ip.end << " each " << ip.each << " steps:" << std::endl;
   Module & pmod = dynamic_cast<Module &>(ip); // no es necesario CastModule aqui
   pmod.Show(std::cout);
   std::cout << '\n';
@@ -476,11 +478,11 @@ void Simulator::Process()
   for (std::list<AtomTypeApplyInfo>::iterator it=inp->atapply.begin();it!=inp->atapply.end();++it)
   {
    AtomTypeApplyInfo & atinf = (*it);
-   if ((step+1) >= atinf.start_step)
+   if ((step+1) >= atinf.start)
    {
     if (Verbose()) std::cerr << "-> Setting AtomType " << atinf.name << " for atoms " << atinf.from_index << " to " << atinf.to_index << '\n';
     for (long q=atinf.from_index;q<=atinf.to_index;++q) sc[q].SetType(*(atinf.t));
-    atinf.start_step = nsteps+1; // FIXME: si alguien piensa en un mejor parche que este...
+    atinf.start = nsteps+1; // FIXME: si alguien piensa en un mejor parche que este...
    }
   }
 
@@ -489,16 +491,20 @@ void Simulator::Process()
   {
    Integrator & integ = *(*it);
    Module & pmod = dynamic_cast<Module &>(integ); // no es necesario CastModule aqui
-   IApplicable & ap = CastModule<IApplicable>(pmod);
-   if ((step+1) >= ap.start_step)
+   Stepper & ap = CastModule<Stepper>(pmod);
+   if ((step+1) >= ap.start)
    { 
     if (Verbose()) std::cerr << "-> Changing active integrator to " << pmod.Name() << '\n';
     SetIntegrator(integ);
-    ap.start_step = nsteps+1; // FIXME: si alguien piensa en un mejor parche que este...
+    ap.start = nsteps+1; // FIXME: si alguien piensa en un mejor parche que este...
    }
   }
 
-  if (step % param.GetInteger("dumping-each") == 0) Dump(param.GetString("dumping-dumpfile")); 
+  if (step % param.GetInteger("dumping-each") == 0)
+  {
+   // FIXME: MD::Dump fue comentada en el api 0.6
+   // Dump(param.GetString("dumping-dumpfile")); 
+  }
 
   // Escribe la configuracion con cada modulo llamado en 'output'
   for (int q=0;q<param.outputlist.size();++q)
@@ -508,14 +514,14 @@ void Simulator::Process()
   for (std::vector<SystemModifier *>::iterator it=modiflist.begin();it!=modiflist.end();++it)
   {
    SystemModifier & sm = *(*it);
-   if (MustDo(step, sm.start_step, sm.end_step, sm.interval)) sm.Apply(*this);
+   if (sm.IsActiveInStep(step)) sm.Apply(*this);
   }
 
   // Check the list of visualizers to see which we must apply now 
   for (std::vector<Visualizer *>::iterator it=vislist.begin();it!=vislist.end();++it)
   {
    Visualizer & vis = *(*it);
-   if (MustDo(step, vis.start_step, vis.end_step, vis.interval)) vis.Apply(*this);
+   if (vis.IsActiveInStep(step)) vis.Apply(*this);
   }
 
   // Check the list of properties to see which we must calculate now  
@@ -525,8 +531,8 @@ void Simulator::Process()
    InstantProperty & ip = *(*it);
    Module & pmod = dynamic_cast<Module &>(ip); // no es necesario CastModule aqui
    IContainable & c = CastModule<IContainable>(pmod);
-   if(ip.end_step == nsteps) ip.end_step--;
-   if (MustDo(step, ip.start_step, ip.end_step, ip.interval)) 
+   if(ip.end == nsteps) ip.end--;
+   if (ip.IsActiveInStep(step))
    {
     ip.Evaluate(sc, p_array);
     if (pmod.GetBool("average") == false)
@@ -536,7 +542,7 @@ void Simulator::Process()
     }
     else c.AddToAverage();
    }
-   if (step == ip.end_step)
+   if (step == ip.end)
    {
     if (pmod.GetBool("average") == true)
     {
@@ -550,7 +556,7 @@ void Simulator::Process()
   for (std::list<MonitorApplyInfo>::iterator it=inp->monapply.begin();it!=inp->monapply.end();++it)
   {
    MonitorApplyInfo & mon = (*it);
-   if (MustDo(step, mon.start_step, mon.end_step, mon.interval))
+   if (mon.IsActiveInStep(step))
    {
     // Actualiza todos los modulos llamados implicitamente por monitor
     for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it) (*it)->Evaluate(sc, p_array);
@@ -560,7 +566,7 @@ void Simulator::Process()
   for (std::list<RunningAverageApplyInfo>::iterator it=inp->ravapply.begin();it!=inp->ravapply.end();++it)
   {
    RunningAverageApplyInfo & rav = (*it);
-   if (MustDo(step, rav.start_step, rav.end_step, rav.interval))
+   if (rav.IsActiveInStep(step))
    {
     // Actualiza todos los modulos llamados implicitamente por monitor
     for (std::vector<InstantProperty *>::iterator it=monitorlist.begin();it!=monitorlist.end();++it) (*it)->Evaluate(sc, p_array);

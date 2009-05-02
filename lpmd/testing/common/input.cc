@@ -50,7 +50,7 @@ CommonInputReader::~CommonInputReader() { }
 //
 void CommonInputReader::ParseLine(std::string line)
 {
- words = ListOfTokens(line);
+ words = StringSplit< std::list<std::string> >(line);
  std::string first_word = words.front();
  std::string statement_args = MatchCommand(words);
  if (statement_args == "") words.pop_front();
@@ -72,7 +72,7 @@ void CommonInputReader::Read(std::istream & istr, const ParamList & options, con
  while (!istr.eof())
  {
   getline(istr, line);
-  std::vector<std::string> tmpwords = SplitTextLine(line);
+  std::vector<std::string> tmpwords = StringSplit< std::vector<std::string> >(line);
   if (tmpwords.size() == 0) continue;
   if (tmpwords[0] == "use") 
   {

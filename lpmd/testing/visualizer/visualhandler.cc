@@ -8,6 +8,7 @@
 
 #include <lpmd/util.h>
 #include <lpmd/session.h>
+#include <lpmd/stepper.h>
 #include <lpmd/cellformat.h>
 #include <lpmd/cellmanager.h>
 #include <lpmd/simulationcell.h>
@@ -41,12 +42,12 @@ void VisualHandler::LoadModules()
  // Carga modulos Visualizer
  // 
  param["visualize-list"] = param["special-list"] + param["visualize-list"];
- std::vector<std::string> visualizers = SplitTextLine(param["visualize-list"]);
+ std::vector<std::string> visualizers = StringSplit< std::vector<std::string> >(param["visualize-list"]);
  for (unsigned int i=0;i<visualizers.size();++i)
  {
   Module & pmod = pluginman[visualizers[i]];
   Visualizer & vis = CastModule<Visualizer>(pmod);
-  vis.interval = -1;
+  vis.each = -1;
   vislist.push_back(&vis);
   pmod.SetUsed();
  }
@@ -148,7 +149,7 @@ void VisualHandler::ProcessConfig()
  {
   Visualizer & vis = *(*it);
   Module & mod = dynamic_cast<Module &>(vis); // no es necesario CastModule aqui
-  if ((vis.interval == -1) || (MustDo(step, vis.start_step, vis.end_step, vis.interval))) vis.Apply(*this);
+  if ((vis.each == -1) || (vis.IsActiveInStep(step))) vis.Apply(*this);
  }
  step++;
 }

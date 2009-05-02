@@ -8,6 +8,7 @@
 
 #include <lpmd/util.h>
 #include <lpmd/session.h>
+#include <lpmd/stepper.h>
 #include <lpmd/containable.h>
 #include <lpmd/instantproperty.h>
 #include <lpmd/scalartable.h>
@@ -32,7 +33,7 @@ Converter::Converter(): CommonHandler("lpmd-converter", "LPMD Converter")
 Converter::~Converter() 
 {
  CommonInputReader & param = GetInputReader();
- std::vector<std::string> properties = SplitTextLine(param["property-list"]);
+ std::vector<std::string> properties = StringSplit< std::vector<std::string> >(param["property-list"]);
  for (unsigned int i=0;i<properties.size();++i) delete propfiles[properties[i]];
  CommonInputReader * inp = &param;
  delete inp;
@@ -46,7 +47,7 @@ void Converter::LoadModules()
  // Carga modulos SystemModifier
  // 
  param["apply-list"] = param["special-list"] + param["apply-list"];
- std::vector<std::string> modifiers = SplitTextLine(param["apply-list"]);
+ std::vector<std::string> modifiers = StringSplit< std::vector<std::string> >(param["apply-list"]);
  for (unsigned int i=0;i<modifiers.size();++i)
  {
   Module & pmod = pluginman[modifiers[i]];
@@ -76,11 +77,12 @@ void Converter::Initialize()
   //
   std::string filename = param["input-file"];
   std::ifstream is(filename.c_str());
-  long read_start=0, read_end=-1, read_each=-1;
+  long int start=0, end=-1, each=-1;
   if (! is.good()) throw FileNotFound(filename);
-  if (param.Defined("input-start")) read_start = param.GetInteger("input-start");
-  if (param.Defined("input-end")) read_end = param.GetInteger("input-end");
-  if (param.Defined("input-each")) read_each = param.GetInteger("input-each");
+  if (param.Defined("input-start")) start = param.GetInteger("input-start");
+  if (param.Defined("input-end")) end = param.GetInteger("input-end");
+  if (param.Defined("input-each")) each = param.GetInteger("input-each");
+  Stepper read(start, end, each);
   cread.ReadHeader(is);
   SimulationCell sc;
   if (configs.size() > 0)
@@ -97,8 +99,8 @@ void Converter::Initialize()
    {
     sc.NumEspec();
     sc.AssignIndex();
-    if ((read_each == -1) || (MustDo(steps, read_start, read_end, read_each))) configs.push_back(sc);
-    if ((read_end >= 0) && (steps >= read_end)) break;
+    if ((read.each == -1) || (read.IsActiveInStep(steps))) configs.push_back(sc);
+    if ((read.end >= 0) && (steps >= read.end)) break;
    }
    else break;
    steps++;
@@ -192,8 +194,7 @@ void Converter::Process()
   {
    SystemModifier & smp = *(*it);
    Module & mod = dynamic_cast<Module &>(smp); // no es necesario CastModule aqui
-   if ((smp.interval == -1) || (MustDo(i, smp.start_step, smp.end_step, smp.interval))) 
-      smp.Apply(configs[i]);
+   if ((smp.each == -1) || (smp.IsActiveInStep(i))) smp.Apply(configs[i]);
   }
  }
 }

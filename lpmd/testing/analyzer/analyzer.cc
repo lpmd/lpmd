@@ -8,6 +8,7 @@
 
 #include <lpmd/util.h>
 #include <lpmd/session.h>
+#include <lpmd/stepper.h>
 #include <lpmd/containable.h>
 #include <lpmd/value.h>
 #include <lpmd/matrix.h>
@@ -32,7 +33,7 @@ Analyzer::Analyzer(): CommonHandler("lpmd-analyzer", "LPMD Analyzer")
 Analyzer::~Analyzer() 
 {
  CommonInputReader & param = GetInputReader();
- std::vector<std::string> properties = SplitTextLine(param["property-list"]);
+ std::vector<std::string> properties = StringSplit< std::vector<std::string> >(param["property-list"]);
  for (unsigned int i=0;i<properties.size();++i) delete propfiles[properties[i]];
  CommonInputReader * inp = &param;
  delete inp;
@@ -43,7 +44,7 @@ void Analyzer::LoadModules()
  CommonHandler::LoadModules();
  CommonInputReader & param = GetInputReader();
  param["property-list"] = param["special-list"] + param["property-list"];
- std::vector<std::string> properties = SplitTextLine(param["property-list"]);
+ std::vector<std::string> properties = StringSplit< std::vector<std::string> >(param["property-list"]);
  for (unsigned int i=0;i<properties.size();++i)
  {
   Module & pmod = pluginman[properties[i]];
@@ -185,7 +186,7 @@ void Analyzer::Process()
   IContainable & icont = CastModule<IContainable>(propmod);
   for (unsigned long i=0;i<configs.size();++i)
   {
-   if ((prop.interval == -1) || (MustDo(i, prop.start_step, prop.end_step, prop.interval)))
+   if ((prop.each == -1) || (prop.IsActiveInStep(i)))
    {
     prop.Evaluate(configs[i], p_array);
     if (propmod.Defined("average") && (propmod["average"] == "true")) propval.AddToAverage();

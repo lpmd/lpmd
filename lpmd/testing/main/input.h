@@ -8,10 +8,10 @@
 #include "../common/input.h"
 
 #include <lpmd/atom.h>
-#include <lpmd/applicable.h>
+#include <lpmd/stepper.h>
 #include <lpmd/util.h>
 
-class AtomTypeApplyInfo: public lpmd::IApplicable
+class AtomTypeApplyInfo: public lpmd::Stepper
 {
  public:
    std::string name;
@@ -19,7 +19,7 @@ class AtomTypeApplyInfo: public lpmd::IApplicable
    long from_index, to_index; 
 };
 
-class MonitorApplyInfo: public lpmd::IApplicable
+class MonitorApplyInfo: public lpmd::Stepper
 {
  public:
    std::string output;
@@ -28,11 +28,11 @@ class MonitorApplyInfo: public lpmd::IApplicable
    //
    MonitorApplyInfo(std::string props, long int start, long int end, long int each, std::string out)
    {
-    properties = lpmd::ListOfTokens(props, ',');
+    properties = lpmd::StringSplit< std::list<std::string> >(props, ',');
     output = out;
-    start_step = start;
-    end_step = end;
-    interval = each;
+    start = start;
+    end = end;
+    each = each;
     mout = &(std::cout);
    }
 };
