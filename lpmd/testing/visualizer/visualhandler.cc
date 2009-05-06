@@ -134,7 +134,6 @@ void VisualHandler::ProcessConfig()
  CellManager * cm = &(scell->GetCellManager());
  CommonInputReader & param = GetInputReader();
  if (cm != NULL) scell->SetCellManager(*cm);
- scell->UseDistanceCache(param.GetBool("distancecache"));
  // Aplica los modulos de "prepare"
  for (std::list<ModuleInfo>::const_iterator it=param.preparelist.begin();it != param.preparelist.end();++it)
  {

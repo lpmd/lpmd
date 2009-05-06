@@ -102,7 +102,7 @@ void CommonHandler::ShowConfigsInfo(std::vector<SimulationCell> & configs)
   std::cerr << "Configuration " << i << ": \n";
   std::cerr << "-> Number of atoms  : " << sc.size() << " atoms\n";
   for (int q=0;q<3;++q) 
-     std::cerr << "-> h[" << q << "]             : " << sc.GetVector(q) << '\n';
+     std::cerr << "-> h[" << q << "]             : " << sc.GetCell()[q] << '\n';
   std::cerr << "-> Volume           : " << sc.Volume() << '\n'; 
   std::cerr << "-> Center of Mass   : " << cm << '\n'; 
   std::cerr << "-> X coordinate     : [ " << xmin << " , " << xmax << " ] (width: " << xmax-xmin << ")\n";
@@ -152,7 +152,7 @@ void CommonHandler::Initialize()
  }
  else
  {
-  if (param["replacecell"] == "true") cell = new Cell(1.0, 1.0, 1.0); 
+  if (param["replacecell"] == "true") cell = new Cell(e1, e2, e3); 
   else EndWithError("The dimensions of the simulation cell were not specified. Maybe you forgot a \"cell\" statement?"); 
  }
 
@@ -168,8 +168,10 @@ void CommonHandler::Initialize()
 
  if (Verbose() && (! param.GetBool("replacecell")))
  {
+  const SimulationCell & sc = GetCell();
+  const Cell & innercell = sc.GetCell();
   std::cerr << "Cell vectors: " << '\n';
-  for (int k=0;k<3;++k) std::cerr << GetCell().GetVector(k) << '\n';
+  for (int k=0;k<3;++k) std::cerr << innercell[k] << '\n';
   std::cerr << "Volume: " << GetCell().Volume() << '\n';
  }
 

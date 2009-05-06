@@ -171,9 +171,9 @@ void Simulator::Initialize()
   pz = param.GetBool("periodic-z");
 
   scell = new SimulationCell(1, 1, 1, px, py, pz);
-  scell->SetVector(0, Vector(1.0, 0.0, 0.0));
-  scell->SetVector(1, Vector(0.0, 1.0, 0.0));
-  scell->SetVector(2, Vector(0.0, 0.0, 1.0));
+  scell->GetCell()[0] = e1;
+  scell->GetCell()[1] = e2;
+  scell->GetCell()[2] = e3;
   SetCell(*scell);
 
   BannerPrint("SIMULATION RESTORE INFORMATION");
@@ -225,7 +225,9 @@ void Simulator::Initialize()
   // Carga el plugin CellManager y lo asigna a la celda de simulacion
   Module & pmod = pluginman[param["cellmanager-module"]];
   CellManager & cm = CastModule<CellManager>(pmod);
+  std::cerr << "DEBUG before SetCellManager\n";
   sc.SetCellManager(cm);
+  std::cerr << "DEBUG after SetCellManager\n";
   pmod.SetUsed();
   BannerPrint("CELL MANAGER INFORMATION");
   pmod.Show(std::cout);
@@ -234,9 +236,9 @@ void Simulator::Initialize()
 
  BannerPrint("CELL INFORMATION");
  std::cout << "Vectors ->                                                              " << std::endl;
- std::cout << "   a = " << sc.GetVector(0) << std::endl;
- std::cout << "   b = " << sc.GetVector(1) << std::endl;
- std::cout << "   c = " << sc.GetVector(2) << std::endl;
+ std::cout << "   a = " << sc.GetCell()[0] << std::endl;
+ std::cout << "   b = " << sc.GetCell()[1] << std::endl;
+ std::cout << "   c = " << sc.GetCell()[2] << std::endl;
  std::cout << "Volume  ->                                                              " << std::endl;
  std::cout << "   V = " << sc.Volume() << " [A^3]." << std::endl;
 
@@ -257,8 +259,6 @@ void Simulator::Initialize()
   else EndWithError("AtomType \""+atinf.name+"\" was not defined. Maybe you forgot a \"type\" block?");
  }
  
- sc.UseDistanceCache(param.GetBool("distancecache"));
-
  if (param.GetBool("showcoords"))
  {
   BannerPrint("ATOMIC COORDINATES INFORMATION");

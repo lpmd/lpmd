@@ -127,9 +127,8 @@ void Analyzer::Process()
  
  for (unsigned long i=0;i<configs.size();++i)
  {
-  if (param.GetString("replacecell") == "false") configs[i].SetCell(*scell);
+  if (param.GetString("replacecell") == "false") configs[i].SetCell(scell->GetCell());
   if (cm != NULL) configs[i].SetCellManager(*cm);
-  configs[i].UseDistanceCache(param.GetBool("distancecache"));
   // Aplica los modulos de "prepare"
   for (std::list<ModuleInfo>::const_iterator it=param.preparelist.begin();it != param.preparelist.end();++it)
   {
