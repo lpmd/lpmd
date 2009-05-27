@@ -1,0 +1,8 @@
+/*
+ *
+ *
+ *
+ */
+
+#include "quickmode.h"
+

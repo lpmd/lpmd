@@ -1,0 +1,37 @@
+#
+#
+#
+
+name = lpmd
+fullname = 'LPMD'
+version = 0.6.0
+author = 'GNM <gnm@gnm.cl>'
+prefix = /usr/local
+
+language c++
+   flags = -g -O3 -ffast-math -funroll-all-loops -Wall -pedantic 
+end
+
+directory .
+    binary lpmd
+       language = c++
+       sources = controlparser.h controlparser.cc quickmode.h quickmode.cc application.cc application.h lpmd.cc lpmd.h
+       installpath = bin
+       pkgconfig += liblpmd-2.0
+    end
+
+    binary lpmd-analyzer
+       language = c++
+       sources = controlparser.h controlparser.cc quickmode.h quickmode.cc application.cc application.h analyzer.cc analyzer.h
+       installpath = bin
+       pkgconfig += liblpmd-2.0
+    end
+
+    binary lpmd-converter
+       language = c++
+       sources = controlparser.h controlparser.cc quickmode.h quickmode.cc application.cc application.h converter.cc converter.h
+       installpath = bin
+       pkgconfig += liblpmd-2.0
+    end
+end
+
