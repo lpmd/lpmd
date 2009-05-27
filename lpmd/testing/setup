@@ -14,11 +14,13 @@ languageCompilation = { 'c++': '%(compiler)s %(compilerflags)s -c %(sources)s',
                         'c': '%(compiler)s %(compilerflags)s -c %(sources)s' }
 languageLinking = { 'c++': '%(linker)s -o %(target)s %(objects)s %(linkflags)s',
                     'c': '%(linker)s -o %(target)s %(objects)s %(linkflags)s' }
+languageStaticLibraryPacking  = { 'c++': 'ar rcs %(target)s %(objects)s',
+                                  'c': 'ar rcs %(target)s %(objects)s' }
 defaultCompiler = { 'c++': 'g++', 'c': 'gcc' }
 libraryExtensions = ('.a', '.so')
 languageFields =  ['flags', 'libraries', 'compiler']
-targetFields = ['language', 'sources', 'installpath', 'flags', 'libraries', 'compiler', 'pkgconfig']
-targetKinds = ['binary', 'script', 'library', 'module']
+targetFields = ['test', 'language', 'sources', 'installpath', 'flags', 'libraries', 'compiler', 'pkgconfig']
+targetKinds = ['binary', 'script', 'library', 'staticlibrary', 'module']
 
 #
 # Auxiliary functions
@@ -33,7 +35,14 @@ def removequotes(x):
 def appendunique(li, item):
     if item not in li: li.append(item)
 
+def anyof(seq, func):
+    for x in seq:
+        if func(x): return True
+    return False
+
 def ObjectFromSource(s): return s.replace(os.path.splitext(s)[1], '.o')
+
+def OutputFromCommand(cmd): return os.popen(cmd+' 2>/dev/null', 'r').read().strip()
 
 #
 #
@@ -102,6 +111,9 @@ class Target(Item):
     def __init__(self, setup, targettype, name, **kwargs):
         Item.__init__(self, name, targetFields, kwargs)
         self.targettype = targettype
+        if self.targettype in ('binary', 'script'):
+           if not hasattr(self, 'test'): self.test = False
+           else: self.test = (str(self.test).lower() == 'true')
         self.sources = [x.strip() for x in self.sources.split()]
         self.language = setup.language[self.language]
         if not hasattr(self, 'flags') and hasattr(self.language, 'flags'):
@@ -126,21 +138,22 @@ class Target(Item):
         if '+(pkgconfig)' in kwargs:
            self.pkgconfig += (' '+kwargs['+(pkgconfig)'])
            self.pkgconfig = self.pkgconfig.strip()
-        if not self.installpath.startswith('/'): 
+        if hasattr(self, 'installpath') and not self.installpath.startswith('/'):
            self.installpath = os.path.join(setup.prefix, self.installpath)
         # Expands pkgconfig into flags and libraries
         for pc in self.pkgconfig.split(): 
-            self.flags += (' `pkg-config --cflags %s` ' % pc)
-            self.libraries += (' `pkg-config --libs %s` ' % pc)
+            os.environ['PKG_CONFIG_PATH'] = os.path.join(setup.prefix, 'lib/pkgconfig')+':'+os.getenv('PKG_CONFIG_PATH', '')
+            self.flags += (' '+OutputFromCommand('pkg-config --cflags %s' % pc)+' ')
+            self.libraries += (' '+OutputFromCommand('pkg-config --libs %s' % pc)+' ')
             self.flags = self.flags.strip()
             self.libraries = self.libraries.strip()
 
 class Directory(dict):
 
     def __init__(self, setup, name, targets):
-        self.name, self.targets, self.sortedtargets = name, { }, []
+        self.name, self.targets, self.sortedtargets, self.tests = name, { }, [], []
         self.setup = setup
-        for k in targetKinds:  
+        for k in targetKinds:
             setattr(self, k, {})
             self.targets[k] = []
         for target in targets:
@@ -150,6 +163,7 @@ class Directory(dict):
             self.sortedtargets.append(hspl[1])
             self[hspl[1]] = targetobj
             if hspl[0] in targetKinds: self.targets[hspl[0]].append(hspl[1])
+            if hasattr(targetobj, 'test') and targetobj.test: self.tests.append(hspl[1])
 
     def UsedLanguages(self):
         return [lang for lang in self.setup.languages if lang in [self[t].language.name for t in self.sortedtargets]]
@@ -168,11 +182,11 @@ class Directory(dict):
         mf += 'install: $(TARGETS)\n'
         ldconfig_libs = []
         for t in self.sortedtargets:
-            mf += ('\t%s %s %s\n' % (self.setup.install, t, self[t].installpath))
-            if self[t].targettype == 'library' and self[t].installpath not in ldconfig_libs:
-               ldconfig_libs.append(self[t].installpath)
-        for ld in ldconfig_libs:
-            mf += '\tldconfig -n %s\n' % ld
+            if hasattr(self[t], 'installpath'):
+               mf += ('\t%s %s %s\n' % (self.setup.install, t, self[t].installpath))
+               if self[t].targettype == 'library' and self[t].installpath not in ldconfig_libs:
+                  ldconfig_libs.append(self[t].installpath)
+        for ld in ldconfig_libs: mf += '\tldconfig -n %s\n' % ld
         mf += '\n'
         objects = []
         for t in self.sortedtargets: 
@@ -183,19 +197,37 @@ class Directory(dict):
                    if not self[t].language.IsFileCompilable(s): continue
                    lapply = self[t].language.Apply(languageCompilation[self[t].language.name], self[t], sources=[s])
                    if lapply != None: mf += ('\t'+lapply+'\n')
-               lapply = self[t].language.Apply(languageLinking[self[t].language.name], self[t], objects=objlist)
-               if lapply != None: mf += ('\t'+lapply+'\n\n')
+               if self[t].targettype == 'binary' or self[t].targettype == 'library' or self[t].targettype == 'module':
+                  lapply = self[t].language.Apply(languageLinking[self[t].language.name], self[t], objects=objlist)
+                  if lapply != None: mf += ('\t'+lapply+'\n\n')
+               elif self[t].targettype == 'staticlibrary':
+                  lapply = self[t].language.Apply(languageStaticLibraryPacking[self[t].language.name], self[t], objects=objlist)
+                  if lapply != None: mf += ('\t'+lapply+'\n\n')
                for obj in objlist:
                    if obj not in objects: objects.append(obj)
             else:
                mf += ('\tcp %s %s\n' % (self[t].sources[0], t))
+        checktargets = [t for t in self.sortedtargets if hasattr(self[t], 'test') and self[t].test]
         if len(subdirs) > 0:
+           # check
+           if anyof([self.setup.directory[x] for x in subdirs], lambda x: len(x.tests) > 0):
+              mf += ('\nsubdirs-check:\n')
+              for d in subdirs: mf += ('\tcd %s && $(MAKE) check\n' % d)
+              mf += ('\ncheck: %s subdirs-check\n' % ' '.join(checktargets))
+           else:
+              if len(checktargets) > 0: mf += ('\ncheck: %s\n' % ' '.join(checktargets))
+           for ct in checktargets: mf += ('\t./%s\n' % ct)
+           # clean
            mf += ('\n.PHONY: subdirs-clean\n\n')
            mf += ('subdirs-clean:\n')
            for d in subdirs: mf += ('\tcd %s && $(MAKE) clean\n' % d) 
            mf += ('\nclean: subdirs-clean\n')
            mf += ('\trm -f $(TARGETS) %s\n\n' % ' '.join(objects))
         else:
+           # check
+           if len(checktargets) > 0: mf += ('\ncheck: %s\n' % ' '.join(checktargets))
+           for ct in checktargets: mf += ('\t./%s\n' % ct)
+           # clean
            mf += ('\n.PHONY: clean\n\n')
            mf += ('clean:\n')
            mf += ('\trm -f $(TARGETS) %s\n\n' % ' '.join(objects))
@@ -231,7 +263,7 @@ class SetupHandler:
                 for library in libs: self.AddToLibraryPath(library) 
 
     def AddToLibraryPath(self, d):
-        if not d in self.librarypath: self.librarypath.append(d)
+        if not d in self.librarypath: self.librarypath.insert(0, d)
 
     def LibraryPath(self): return self.librarypath
 
@@ -301,14 +333,14 @@ class SetupHandler:
         for d in self.directories:
             for t in self.directory[d].sortedtargets:
                 if hasattr(self.directory[d][t], 'pkgconfig') and self.directory[d][t].pkgconfig != '':
-                   utilitylist.append('pkg-config')
+                   if 'pkg-config' not in utilitylist: utilitylist.append('pkg-config')
         return utilitylist
 
     def HaveExecutable(self, ex): 
         sys.stdout.write('   '+ex+' ')
         expath = os.popen('which %s' % ex, 'r').readline().strip()
         st = (expath != '') 
-        if st: print '-> ', expath
+        if st: print '->', expath
         else: sys.stdout.write('NOT FOUND\n')
         return st
 
@@ -318,9 +350,10 @@ class SetupHandler:
         for lpath in self.LibraryPath():
             for ext in libraryExtensions:
                 if os.path.exists(os.path.join(lpath, library+ext)):
-                   print '-> ', os.path.join(lpath, library+ext)
+                   print '->', os.path.join(lpath, library+ext)
                    st = True
                    break
+            if st: break
         if not st: sys.stdout.write('NOT FOUND\n')
         return st
 
@@ -332,9 +365,9 @@ class SetupHandler:
         else: 
            cflags = os.popen('pkg-config --cflags %s' % pc).readline().strip()
            libs = os.popen('pkg-config --libs %s' % pc).readline().strip()
-           if cflags.startswith('-I'): print '-> ', os.path.dirname(cflags.replace('-I', ''))
-           elif libs.startswith('-L'): print '-> ', os.path.dirname(libs.replace('-L', ''))
-           else: print '-> ', cflags+' '+libs
+           if cflags.startswith('-I'): print '->', os.path.dirname(cflags.replace('-I', ''))
+           elif libs.startswith('-L'): print '->', os.path.dirname(libs.replace('-L', ''))
+           else: print '->', cflags+' '+libs
         return st
 
     def Setup(self):
@@ -353,15 +386,18 @@ class SetupHandler:
         for ut in self.RequiredUtilities():
             if not self.HaveExecutable(ut): raise MissingComponent('utility', ut)
         if 'pkg-config' in self.RequiredUtilities():
+           os.environ['PKG_CONFIG_PATH'] = os.path.join(self.prefix, 'lib/pkgconfig')+':'+os.getenv('PKG_CONFIG_PATH', '')
            print
            print '* Checking for pkgconfig libraries'
            for pc in self.RequiredPkgConfigLibraries():
                if not self.HavePkgConfigLibrary(pc): raise MissingComponent('pkgconfig library', pc)
         print
-        print '* Checking for libraries:'
-        for lib in self.RequiredLibraries():
-            if not self.HaveLibrary(lib): raise MissingComponent('library', lib)
-        print
+        rlib = self.RequiredLibraries()
+        if len(rlib) > 0: 
+           print '* Checking for libraries:'
+           for lib in self.RequiredLibraries():
+               if not self.HaveLibrary(lib): raise MissingComponent('library', lib)
+           print
         print '* Creating makefiles:'
         toplevelSubdirs = [d for d in self.directories if d != '.']
         for d in self.directories:
@@ -381,5 +417,5 @@ if __name__ == '__main__':
       setup = SetupHandler('packagesetup')
       setup.Setup()
    except Exception, e: 
-     print e
+      print '\n', e
 

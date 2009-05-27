@@ -13,25 +13,35 @@ language c++
 end
 
 directory .
+    staticlibrary liblpmdutility.a
+       language = c++
+       sources = controlparser.h controlparser.cc quickmode.h quickmode.cc application.h application.cc
+       pkgconfig += liblpmd-2.0
+       installpath = lib
+    end
+
     binary lpmd
        language = c++
-       sources = controlparser.h controlparser.cc quickmode.h quickmode.cc application.cc application.h lpmd.cc lpmd.h
+       sources = lpmd.cc lpmd.h
        installpath = bin
        pkgconfig += liblpmd-2.0
+       libraries += liblpmdutility.a
     end
 
     binary lpmd-analyzer
        language = c++
-       sources = controlparser.h controlparser.cc quickmode.h quickmode.cc application.cc application.h analyzer.cc analyzer.h
+       sources = analyzer.cc analyzer.h
        installpath = bin
        pkgconfig += liblpmd-2.0
+       libraries += liblpmdutility.a
     end
 
     binary lpmd-converter
        language = c++
-       sources = controlparser.h controlparser.cc quickmode.h quickmode.cc application.cc application.h converter.cc converter.h
+       sources = converter.cc converter.h
        installpath = bin
        pkgconfig += liblpmd-2.0
+       libraries += liblpmdutility.a
     end
 end
 
