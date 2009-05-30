@@ -11,7 +11,7 @@
 
 using namespace lpmd;
 
-class QuickModeParser
+class QuickModeParser: public CommandArguments
 {
  public:
 

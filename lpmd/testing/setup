@@ -1,26 +1,43 @@
 #!/usr/bin/env python
 
 import os.path, os, sys
+from copy import deepcopy
 
 #
 # Syntax and definitions
 #
 defaultPrefix = '/usr/local'
-defaultInstall = 'install -v -D'
-defaultLanguages = ['c', 'c++', 'python']
-compiledLanguages = ['c', 'c++']
-headerExtensions = { 'c': ('h',) , 'c++': ('h', 'hpp') }
-languageCompilation = { 'c++': '%(compiler)s %(compilerflags)s -c %(sources)s',
-                        'c': '%(compiler)s %(compilerflags)s -c %(sources)s' }
-languageLinking = { 'c++': '%(linker)s -o %(target)s %(objects)s %(linkflags)s',
-                    'c': '%(linker)s -o %(target)s %(objects)s %(linkflags)s' }
-languageStaticLibraryPacking  = { 'c++': 'ar rcs %(target)s %(objects)s',
-                                  'c': 'ar rcs %(target)s %(objects)s' }
-defaultCompiler = { 'c++': 'g++', 'c': 'gcc' }
-libraryExtensions = ('.a', '.so')
+defaultInstall = 'install'
+
+defaultLanguages = ['c', 'c++', 'python', 'lpunit']
+
+compiledLanguages = ['c', 'c++', 'lpunit']
+
+headerExtensions = { 'c': ['h'] , 'c++': ['h', 'hpp'], 'lpunit': ['h', 'hpp'] }
+
+languageCompilation = { 'c++': '%(compiler)s %(compilerflags)s -c %(source)s -o %(object)s',
+                        'c': '%(compiler)s %(compilerflags)s -c %(source)s -o %(object)s',
+                        'lpunit': '%(compiler)s %(source)s - | g++ %(compilerflags)s -x c++ -c -o %(object)s -' }
+
+languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
+                    'c': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
+                    'lpunit': '%(linker)s -o %(target)s %(object)s %(linkflags)s' }
+
+languageStaticLibraryPacking  = { 'c++': 'ar rcs %(target)s %(object)s',
+                                  'c': 'ar rcs %(target)s %(object)s',
+                                  'lpunit': 'ar rcs %(target)s %(object)s' }
+
+defaultCompiler = { 'c++': 'g++', 'c': 'gcc', 'lpunit': 'lpmaketest' }
+
+defaultLinker = { 'c++': 'g++', 'c': 'gcc', 'lpunit': 'g++' }
+
+libraryExtensions = ['a', 'so']
 languageFields =  ['flags', 'libraries', 'compiler']
-targetFields = ['test', 'language', 'sources', 'installpath', 'flags', 'libraries', 'compiler', 'pkgconfig']
-targetKinds = ['binary', 'script', 'library', 'staticlibrary', 'module']
+targetFields = ['test', 'language', 'sources', 'headers', 'installpath', 'pkgconfig', 'expand', 'version'] + languageFields
+targetKinds = ['binary', 'script', 'library', 'staticlibrary', 'headers', 'module', 'file']
+globaltags = ['name', 'fullname', 'version', 'author', 'prefix']
+blocktags = ['language', 'directory'] + targetKinds
+reserved_keywords = blocktags + targetFields + targetKinds
 
 #
 # Auxiliary functions
@@ -35,12 +52,20 @@ def removequotes(x):
 def appendunique(li, item):
     if item not in li: li.append(item)
 
+def uniquelist(li):
+    tmp = []
+    for x in li: appendunique(tmp, x)
+    return tmp
+
 def anyof(seq, func):
     for x in seq:
         if func(x): return True
     return False
 
-def ObjectFromSource(s): return s.replace(os.path.splitext(s)[1], '.o')
+def ObjectFromSource(s): 
+    for ext in libraryExtensions:
+        if s.endswith('.'+ext): return s
+    return s.replace(os.path.splitext(s)[1], '.o')
 
 def OutputFromCommand(cmd): return os.popen(cmd+' 2>/dev/null', 'r').read().strip()
 
@@ -48,13 +73,11 @@ def OutputFromCommand(cmd): return os.popen(cmd+' 2>/dev/null', 'r').read().stri
 #
 #
 class UnknownLanguage(Exception):
-
     def __init__(self, lang): self.lang = lang
     def __repr__(self): return '[Error] Unknown language, %s' % self.lang
     def __str__(self): return repr(self)
 
 class MissingComponent(Exception):
-
     def __init__(self, comptype, name): self.comptype, self.name = comptype, name
     def __repr__(self): return '[Error] Missing %s, %s' % (self.comptype, self.name)
     def __str__(self): return repr(self)
@@ -84,12 +107,36 @@ class Language(Item):
            self.libraries = ''
            self.flags = ''
         Item.__init__(self, name, languageFields, kwargs)
-        if not hasattr(self, 'linker') and hasattr(self, 'compiler'): 
-           self.linker = self.compiler
+        if self.IsCompiled() and not hasattr(self, 'linker'): 
+           self.linker = defaultLinker[name]
 
     def Update(self, d):
         for k in self.fields:
             if k in d: setattr(self, k, d[k])
+
+    def IncludeDirectories(self, flags):
+        incdirs = []
+        for token in flags.split():
+            if token.startswith('-I'):
+               if token[2:] not in incdirs: incdirs.append(token[2:])
+        return incdirs
+
+    def SourcesIncludedIn(self, filename, includedirs):
+        inc = []
+        for line in file(filename, 'r'):
+            line = line.strip()
+            if line.startswith('#include'):
+               remainder = line[8:].strip()
+               if remainder.startswith('\"') and remainder.endswith('\"'):
+                  includedname = remainder[1:-1]
+                  if includedname not in inc: inc.append(includedname)
+               elif remainder.startswith('<') and remainder.endswith('>'):
+                  includedname = remainder[1:-1]
+                  if includedname not in inc: 
+                     for d in includedirs: 
+                         if os.path.exists(os.path.join(d, includedname)): inc.append(os.path.join(d, includedname))
+               else: assert False
+        return inc
  
     def IsCompiled(self): return (self.name in compiledLanguages)
 
@@ -104,30 +151,34 @@ class Language(Item):
         compilableSources = [x for x in sources if self.IsFileCompilable(x)]
         return pattern % {'target': target.name, 'compiler': target.compiler, 'linkflags': target.libraries, 
                           'compilerflags': target.flags, 'linker': target.linker, 
-                          'sources': ' '.join(compilableSources), 'objects': ' '.join(objects)}
+                          'source': ' '.join(compilableSources), 'object': ' '.join(objects)}
 
 class Target(Item):
 
-    def __init__(self, setup, targettype, name, **kwargs):
+    def __init__(self, setup, directory, targettype, name, **kwargs):
         Item.__init__(self, name, targetFields, kwargs)
         self.targettype = targettype
         if self.targettype in ('binary', 'script'):
            if not hasattr(self, 'test'): self.test = False
            else: self.test = (str(self.test).lower() == 'true')
         self.sources = [x.strip() for x in self.sources.split()]
-        self.language = setup.language[self.language]
-        if not hasattr(self, 'flags') and hasattr(self.language, 'flags'):
-           self.flags = self.language.flags
-           if self.targettype == 'library': self.flags += ' -shared '
-           elif self.targettype == 'module': self.flags += ' -fPIC -shared '
-        if not hasattr(self, 'libraries') and hasattr(self.language, 'libraries'):
-           self.libraries = self.language.libraries
-           if self.targettype == 'library': self.libraries += ' -shared '
-           elif self.targettype == 'module': self.libraries += ' -fPIC -shared '
-        if not hasattr(self, 'compiler') and hasattr(self.language, 'compiler'):
-           self.compiler = self.language.compiler
-        if not hasattr(self, 'linker') and hasattr(self.language, 'linker'):
-           self.linker = self.language.linker
+        if hasattr(self, 'language'): 
+           self.language = setup.language[self.language]
+           if not hasattr(self, 'flags') and hasattr(self.language, 'flags'):
+              self.flags = self.language.flags
+              if self.targettype == 'library': self.flags += ' -shared '
+              elif self.targettype == 'module': self.flags += ' -fPIC -shared '
+           if not hasattr(self, 'libraries') and hasattr(self.language, 'libraries'):
+              self.libraries = self.language.libraries
+              if self.targettype == 'library': 
+                 self.major, self.minor, self.revision = [int(z) for z in self.version.split('.')]
+                 self.installname = '%s.%d.%d.%d' % (name, int(self.major), int(self.minor), int(self.revision))
+                 self.libraries += ' -shared -Wl,-export-dynamic -Wl,-soname,%s.%d -o %s' % (name, int(self.major), self.installname)
+              elif self.targettype == 'module': self.libraries += ' -fPIC -shared '
+           if not hasattr(self, 'compiler') and hasattr(self.language, 'compiler'):
+              self.compiler = self.language.compiler
+           if not hasattr(self, 'linker') and hasattr(self.language, 'linker'):
+              self.linker = self.language.linker
         if not hasattr(self, 'pkgconfig'): self.pkgconfig = ''
         if '+(flags)' in kwargs: 
            self.flags += (' '+kwargs['+(flags)']) 
@@ -147,6 +198,19 @@ class Target(Item):
             self.libraries += (' '+OutputFromCommand('pkg-config --libs %s' % pc)+' ')
             self.flags = self.flags.strip()
             self.libraries = self.libraries.strip()
+        # Once the flags are expanded, we can search for included sources
+        if hasattr(self, 'language') and self.language.name in ('c', 'c++', 'lpunit'):
+           incdirs = []
+           self.sourcesfrom = {}
+           if hasattr(self, 'flags'): incdirs = self.language.IncludeDirectories(self.flags)
+           newsources = []
+           for x in self.sources:
+               if x.endswith('.a') or x.endswith('.so'): continue
+               if x not in self.sourcesfrom: self.sourcesfrom[x] = []
+               for y in self.language.SourcesIncludedIn(os.path.join(directory.name, x), incdirs):
+                   if y not in newsources: newsources.append(y)
+                   if y not in self.sourcesfrom[x]: self.sourcesfrom[x].append(y)
+           self.sources += newsources
 
 class Directory(dict):
 
@@ -158,7 +222,7 @@ class Directory(dict):
             self.targets[k] = []
         for target in targets:
             hspl = target.header.split()
-            targetobj = Target(setup, hspl[0], hspl[1], **target)
+            targetobj = Target(setup, self, hspl[0], hspl[1], **target)
             getattr(self, hspl[0])[hspl[1]] = targetobj
             self.sortedtargets.append(hspl[1])
             self[hspl[1]] = targetobj
@@ -169,46 +233,90 @@ class Directory(dict):
         return [lang for lang in self.setup.languages if lang in [self[t].language.name for t in self.sortedtargets]]
 
     def RenderMakefile(self, subdirs):
+        already_included_dependencies = []
         mf = '#\n#\n#\n\n'
         if hasattr(self.setup, 'version'): mf += ('VERSION=\"%s\"\n\n' % self.setup.version)
-        mf += ('TARGETS='+' '.join(self.sortedtargets)+'\n\n')
+        mf += ('TARGETS='+' '.join([z for z in self.sortedtargets if not hasattr(self[z], 'test') or not self[z].test])+'\n\n')
         if len(subdirs) > 0:
            mf += 'all: subdirs $(TARGETS)\n\n'
            mf += 'subdirs:\n'
            for d in subdirs: mf += ('\tcd %s && $(MAKE)\n' % d)
            mf += '\n'
+           mf += 'install: subdirs-install $(TARGETS)\n'
         else:
            mf += 'all: $(TARGETS)\n\n'
-        mf += 'install: $(TARGETS)\n'
+           mf += 'install: $(TARGETS)\n'
+        pathlist = uniquelist([self[t].installpath for t in self.sortedtargets if hasattr(self[t], 'installpath')])
+        mf += '\n'
+        for p in pathlist:
+            mf += ('\t%s -v -d %s\n' % (self.setup.install, p))
+        mf += '\n'
         ldconfig_libs = []
         for t in self.sortedtargets:
             if hasattr(self[t], 'installpath'):
-               mf += ('\t%s %s %s\n' % (self.setup.install, t, self[t].installpath))
+               realtarget = [ t ]
+               if self[t].targettype == 'headers': realtarget = self[t].sources
+               elif hasattr(self[t], 'installname'): realtarget = [ self[t].installname ]
+               for rt in realtarget:
+                  mf += ('\t%s -v -D %s %s\n' % (self.setup.install, rt, self[t].installpath))
+               if hasattr(self[t], 'installname') and self[t].installname != t:
+                  mf += ('\t%s %s %s\n' % ('cp -vd', t, self[t].installpath))
                if self[t].targettype == 'library' and self[t].installpath not in ldconfig_libs:
                   ldconfig_libs.append(self[t].installpath)
         for ld in ldconfig_libs: mf += '\tldconfig -n %s\n' % ld
         mf += '\n'
         objects = []
+        setuppath = './setup'
+        if self.name != '.':
+           assert not '/' in self.name
+           setuppath = '../setup'
         for t in self.sortedtargets: 
-            mf += (t+': '+' '.join(self[t].sources)+'\n')
-            if self[t].language.IsCompiled():
-               objlist = [ObjectFromSource(x) for x in self[t].sources if self[t].language.IsFileCompilable(x)]
-               for s in self[t].sources:
-                   if not self[t].language.IsFileCompilable(s): continue
-                   lapply = self[t].language.Apply(languageCompilation[self[t].language.name], self[t], sources=[s])
-                   if lapply != None: mf += ('\t'+lapply+'\n')
-               if self[t].targettype == 'binary' or self[t].targettype == 'library' or self[t].targettype == 'module':
-                  lapply = self[t].language.Apply(languageLinking[self[t].language.name], self[t], objects=objlist)
-                  if lapply != None: mf += ('\t'+lapply+'\n\n')
-               elif self[t].targettype == 'staticlibrary':
-                  lapply = self[t].language.Apply(languageStaticLibraryPacking[self[t].language.name], self[t], objects=objlist)
-                  if lapply != None: mf += ('\t'+lapply+'\n\n')
-               for obj in objlist:
-                   if obj not in objects: objects.append(obj)
+            dependencies = self[t].sources
+            if not hasattr(self[t], 'language') or not self[t].language.IsCompiled(): 
+               #
+               # Non-compilable targets 
+               #
+               mf += ('%s: %s\n' % (t, ' '.join(dependencies)))
+               if hasattr(self[t], 'expand'):
+                  varstoexpand = self[t].expand.split()
+                  varexpr = ','.join([('%s=%s' % (x, getattr(self.setup, x))) for x in varstoexpand])
+                  mf += ('\tcat %s | %s --expand=\"%s\" > %s\n' % (' '.join(dependencies), setuppath, varexpr, t))
+               elif self[t].targettype == 'headers': mf += '\n'
+               else: 
+                  if len(dependencies) == 1 and dependencies[0] == t: mf += '\n\n'
+                  else: mf += ('\tcat %s > %s\n' % (' '.join(dependencies), t))
+               if self[t].targettype == 'script': mf += ('\tchmod "u+x" %s\n' % t)
+               mf += '\n'
             else:
-               mf += ('\tcp %s %s\n' % (self[t].sources[0], t))
+              if self[t].language.IsCompiled(): dependencies = [ObjectFromSource(x) for x in dependencies if self[t].language.IsFileCompilable(x)]
+              for s in self[t].sources:
+                  if s in already_included_dependencies or not self[t].language.IsFileCompilable(s): continue
+                  sources_from_s = []
+                  if s in self[t].sourcesfrom: sources_from_s = self[t].sourcesfrom[s]
+                  mf += ((ObjectFromSource(s)+': '+s+' '+(' '.join(sources_from_s))).rstrip()+'\n')
+                  lapply = self[t].language.Apply(languageCompilation[self[t].language.name], self[t], sources=[s], objects=[ObjectFromSource(s)])
+                  if lapply != None: mf += ('\t'+lapply+'\n')
+                  mf += '\n'
+                  already_included_dependencies.append(s)
+              mf += (t+': '+' '.join(dependencies)+'\n')
+              if self[t].language.IsCompiled():
+                 objlist = dependencies
+                 if self[t].targettype == 'binary' or self[t].targettype == 'library' or self[t].targettype == 'module':
+                    lapply = self[t].language.Apply(languageLinking[self[t].language.name], self[t], objects=objlist)
+                    if lapply != None: mf += ('\t'+lapply+'\n')
+                    if hasattr(self[t], 'installname') and self[t].installname != t:
+                       mf += ('\trm -f %s\n\tln -s %s %s\n' % (t, self[t].installname, t))
+                    mf += '\n'
+                 elif self[t].targettype == 'staticlibrary':
+                    lapply = self[t].language.Apply(languageStaticLibraryPacking[self[t].language.name], self[t], objects=objlist)
+                    if lapply != None: mf += ('\t'+lapply+'\n\n')
+                 for obj in objlist:
+                     if obj not in objects: objects.append(obj)
         checktargets = [t for t in self.sortedtargets if hasattr(self[t], 'test') and self[t].test]
         if len(subdirs) > 0:
+           # install
+           mf += ('\nsubdirs-install:\n')
+           for d in subdirs: mf += ('\tcd %s && $(MAKE) install\n' % d)
            # check
            if anyof([self.setup.directory[x] for x in subdirs], lambda x: len(x.tests) > 0):
               mf += ('\nsubdirs-check:\n')
@@ -216,6 +324,7 @@ class Directory(dict):
               mf += ('\ncheck: %s subdirs-check\n' % ' '.join(checktargets))
            else:
               if len(checktargets) > 0: mf += ('\ncheck: %s\n' % ' '.join(checktargets))
+              else: mf += ('\ncheck: \n')
            for ct in checktargets: mf += ('\t./%s\n' % ct)
            # clean
            mf += ('\n.PHONY: subdirs-clean\n\n')
@@ -225,8 +334,10 @@ class Directory(dict):
            mf += ('\trm -f $(TARGETS) %s\n\n' % ' '.join(objects))
         else:
            # check
-           if len(checktargets) > 0: mf += ('\ncheck: %s\n' % ' '.join(checktargets))
-           for ct in checktargets: mf += ('\t./%s\n' % ct)
+           if len(checktargets) > 0: 
+              mf += ('\ncheck: %s\n' % ' '.join(checktargets))
+              for ct in checktargets: mf += ('\t./%s\n' % ct)
+           else: mf += ('\ncheck: \n')
            # clean
            mf += ('\n.PHONY: clean\n\n')
            mf += ('clean:\n')
@@ -235,8 +346,6 @@ class Directory(dict):
 
 class SetupHandler:
 
-    globaltags = ['name', 'fullname', 'version', 'author', 'prefix']
-    blocktags = ['language', 'directory'] + targetKinds
     language, directory = { }, { }
 
     def __getdirectories(self): return self.directory.keys()
@@ -244,14 +353,14 @@ class SetupHandler:
     directories = property(__getdirectories, None)
     languages = property(__getlanguages, None)
 
-    def __init__(self, psetup='packagesetup'):
+    def __init__(self, psetup='packagesetup', options={}):
         self.librarypath = []
         self.AddToLibraryPath('/usr/local/lib')
         self.AddToLibraryPath('/usr/lib')
-        for lang in defaultLanguages: self.language[lang] = Language(lang)
         self.prefix = defaultPrefix
         self.install = defaultInstall
-        self.ParsePackageSetup(psetup)
+        for lang in defaultLanguages: self.language[lang] = Language(lang)
+        self.ParsePackageSetup(psetup, options)
         self.AddToLibraryPath(os.path.join(self.prefix, 'lib'))
         #
         # Detect other library paths
@@ -276,19 +385,30 @@ class SetupHandler:
                  tag, value = [x.strip() for x in line.split('+=')]
                  block['+('+tag+')'] = removequotes(value) 
               elif '=' in line: 
-                 tag, value = [x.strip() for x in line.split('=')]
+                 linesplit = [x.strip() for x in line.split('=')]
+                 tag = linesplit[0]
+                 value = '='.join(linesplit[1:])
                  block[tag] = removequotes(value)
-              elif line.split()[0] in self.blocktags:
+              elif line.split()[0] in blocktags:
                  tmpblock = self.ParseBlock(line)
                  if not 'blocks' in block: block['blocks'] = []
                  block['blocks'].append(tmpblock)
         return block
 
-    def ParsePackageSetup(self, psetup):
-        self.linebuffer = [x for x in file(psetup, 'r').readlines() if not ignorable(x)]
+    def ReadLineBuffer(self, filename):
+        rawdata = file(filename, 'r').read()
+        while '\\\n' in rawdata:
+              rawdata = rawdata.replace('\\\n', '')
+        return [x for x in rawdata.split('\n') if not ignorable(x)]
+
+    def ParsePackageSetup(self, psetup, options):
+        self.linebuffer = self.ReadLineBuffer(psetup)
         self.block = self.ParseBlock()
-        for tag in self.globaltags: 
+        for tag in globaltags: 
             if tag in self.block: setattr(self, tag, self.block[tag])
+        for opt in options:
+            if opt not in reserved_keywords: setattr(self, opt, options[opt])
+            else: sys.stderr.write('[Warning] Ignoring invalid command line option, --%s\n' % opt)
         for b in self.block['blocks']:
             hspl = b.header.split()
             if hspl[0] == 'language': self.language[hspl[1]].Update(b)
@@ -339,18 +459,20 @@ class SetupHandler:
     def HaveExecutable(self, ex): 
         sys.stdout.write('   '+ex+' ')
         expath = os.popen('which %s' % ex, 'r').readline().strip()
-        st = (expath != '') 
-        if st: print '->', expath
-        else: sys.stdout.write('NOT FOUND\n')
-        return st
+        if (expath != ''):
+           print '->', expath
+           return os.path.abspath(expath)
+        else: 
+           sys.stdout.write('NOT FOUND\n')
+           return None
 
     def HaveLibrary(self, library): 
         sys.stdout.write('   '+library+' ')
         st = False
         for lpath in self.LibraryPath():
             for ext in libraryExtensions:
-                if os.path.exists(os.path.join(lpath, library+ext)):
-                   print '->', os.path.join(lpath, library+ext)
+                if os.path.exists(os.path.join(lpath, library+'.'+ext)):
+                   print '->', os.path.join(lpath, library+'.'+ext)
                    st = True
                    break
             if st: break
@@ -371,24 +493,37 @@ class SetupHandler:
         return st
 
     def Setup(self):
+        if not hasattr(self, 'debug'): self.debug = False
+        if self.debug: sys.stdout.write('* IN DEBUG MODE\n')
+        self.actualpath = { }
+        sys.stdout.write('* Configuring package %s version %s\n\n' % (self.name, self.version))
+        sys.stdout.write('* Using installation directory: %s\n\n' % self.prefix)
         sys.stdout.write('* Checking for sources: ')
+        genfiles = []
+        for d in self.directories:
+            for t in self.directory[d].sortedtargets:
+                genfiles.append(os.path.abspath(os.path.join(d, t)))
         for d in self.directories:
             for t in self.directory[d].sortedtargets:
                 for s in self.directory[d][t].sources:
                     sfile = os.path.join(d, s)
-                    if not os.path.exists(sfile): raise MissingComponent('source file', sfile)
+                    if not os.path.abspath(sfile) in genfiles and not os.path.exists(sfile): 
+                       raise MissingComponent('source file', sfile)
         print 'OK'
         print '* Checking for compilers:'
         for comp in self.RequiredCompilers(): 
-            if not self.HaveExecutable(comp): raise MissingComponent('compiler', comp)
-        print
-        print '* Checking for other utilities:'
+            if comp.startswith('./') or comp.startswith('../'): continue
+            ans = self.HaveExecutable(comp)
+            if ans == None: raise MissingComponent('compiler', comp)
+            self.actualpath[comp] = ans
+        print '\n* Checking for other utilities:'
         for ut in self.RequiredUtilities():
-            if not self.HaveExecutable(ut): raise MissingComponent('utility', ut)
+            ans = self.HaveExecutable(ut)
+            if ans == None: raise MissingComponent('utility', ut)
+            self.actualpath[ut] = ans
         if 'pkg-config' in self.RequiredUtilities():
            os.environ['PKG_CONFIG_PATH'] = os.path.join(self.prefix, 'lib/pkgconfig')+':'+os.getenv('PKG_CONFIG_PATH', '')
-           print
-           print '* Checking for pkgconfig libraries'
+           print '\n* Checking for pkgconfig libraries'
            for pc in self.RequiredPkgConfigLibraries():
                if not self.HavePkgConfigLibrary(pc): raise MissingComponent('pkgconfig library', pc)
         print
@@ -405,17 +540,34 @@ class SetupHandler:
             if d != '.' and not os.path.exists(d): os.system('mkdir -p %s' % d)
             if d == '.': subdirs = toplevelSubdirs
             self.CreateMakefile(self.directory[d], subdirs)
-        print 
-        print 'Everything seems ready. Now you can compile %s' % self.name
+        print '\nEverything seems ready. Now you can compile %s' % self.name
         print 'with \'make\' and \'make install\' (without quotes)'
+
+class OptionParser(dict):
+
+    def __init__(self, argv):
+        self.arguments = []
+        argvs = deepcopy(argv)
+        while len(argvs) > 0:
+            word = argvs.pop(0)
+            if word.startswith('--'): 
+               option_name = word[2:]
+               if '=' in option_name: self[option_name.split('=')[0]] = '='.join(option_name.split('=')[1:])
+               else: self[option_name] = True 
+
+def ExpandVariables(d):
+    buffer = sys.stdin.read()
+    for key in d: buffer = buffer.replace('$('+key+')', d[key])
+    sys.stdout.write(buffer)
 
 #
 #
 #
 if __name__ == '__main__':
    try:
-      setup = SetupHandler('packagesetup')
-      setup.Setup()
+      opt = OptionParser(sys.argv)
+      if 'expand' in opt: ExpandVariables(dict([x.split('=') for x in opt['expand'].split(',')]))
+      else: SetupHandler('packagesetup', opt).Setup()
    except Exception, e: 
       print '\n', e
 
