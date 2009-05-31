@@ -11,16 +11,22 @@
 class UControlImpl
 {
  public:
+   PluginManager * pluginmanager;
    Array<ModuleInfo> plugins;
    Array<TypeInfo> types;
    Array<std::string> pluginpath;
    ParamList potentials;
    ParamList bonds;
+   std::map<std::string, int> modulecounter;
 };
 
-UtilityControl::UtilityControl()
+UtilityControl::UtilityControl(PluginManager & pm)
 {
  impl = new UControlImpl();
+ impl->pluginmanager = &pm;
+ impl->modulecounter["input"] = 0;
+ impl->modulecounter["output"] = 0;
+ impl->modulecounter["prepare"] = 0;
  DeclareStatement("plugindir", "dir");
  DeclareStatement("cell cubic", "a scale");
  DeclareStatement("cell crystal", "a b c alpha beta gamma scale");
@@ -34,11 +40,18 @@ UtilityControl::UtilityControl()
  //
  DeclareBlock("use", "enduse");
  DeclareBlock("type", "endtype");
+
+ // 
+ ParamList & params = (*this);
+ params["periodic-x"] = "true";
+ params["periodic-y"] = "true";
+ params["periodic-z"] = "true";
+ params["cell-scale"] = "1.0";
 }
 
 UtilityControl::~UtilityControl() { delete impl; }
 
-int UtilityControl::OnRegularStatement(const std::string & name, const ParamList & keywords)
+int UtilityControl::OnRegularStatement(const std::string & name, const std::string & keywords)
 {
  ParamList & params = (*this);
  if (name == "cell")
@@ -67,7 +80,20 @@ int UtilityControl::OnRegularStatement(const std::string & name, const ParamList
 
 int UtilityControl::OnNonRegularStatement(const std::string & name, const std::string & full_statement)
 {
-
+ Map & params = (*this);
+ ModuleInfo module_info("", "", ""); //FIXME: mejor constructor!
+ if (((name == "input") || (name == "prepare")) || (name == "output"))
+ {
+  impl->modulecounter[name]++;
+  std::string tmp = ParseCommandArguments(params, name, "module ");
+  std::string validkeywords = (impl->pluginmanager)->GetPluginKeywords(params[name+"-module"]);
+  std::string args = ParseCommandArguments(params, name, validkeywords);
+  params[name+"-modules"] += (params[name+"-module"]+" ");
+  module_info.name = params[name+"-module"];
+  module_info.id = name+ToString(impl->modulecounter[name]);
+  module_info.args = args;
+  impl->plugins.Append(module_info);
+ }
  return 0;
 }
 

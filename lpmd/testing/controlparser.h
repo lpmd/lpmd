@@ -8,6 +8,7 @@
 #define __LPMDUTIL_CONTROLPARSER_H__
 
 #include <lpmd/controlfile.h>
+#include <lpmd/pluginmanager.h>
 #include <lpmd/moduleinfo.h>
 
 #include "typeinfo.h"
@@ -17,10 +18,10 @@ using namespace lpmd;
 class UtilityControl: public ControlFile
 {
  public:
-   UtilityControl();
+   UtilityControl(PluginManager & pm);
    virtual ~UtilityControl();
 
-   int OnRegularStatement(const std::string & name, const ParamList & keywords);
+   int OnRegularStatement(const std::string & name, const std::string & keywords);
    int OnNonRegularStatement(const std::string & name, const std::string & full_statement);
    int OnBlock(const std::string & name, const std::string & full_statement);
    
