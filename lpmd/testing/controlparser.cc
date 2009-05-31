@@ -92,9 +92,30 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
   module_info.name = params[name+"-module"];
   module_info.id = name+ToString(impl->modulecounter[name]);
   module_info.args = args;
+
+  // Load the plugin
+  (impl->pluginmanager)->LoadPlugin(module_info);
+  //
   impl->plugins.Append(module_info);
+  return 0;
  }
- return 0;
+ else if (((name == "property") || (name == "apply")) || (name == "visualize"))
+ {
+  std::string tmp = ParseCommandArguments(params, name, "module ");
+  std::string validkeywords = (impl->pluginmanager)->GetPluginKeywords(params[name+"-module"]);
+  std::string args = ParseCommandArguments(params, name, validkeywords);
+  for (int q=0;q<impl->plugins.Size();++q)
+  {
+   if (impl->plugins[q].id == params[name+"-module"]) 
+   {
+    impl->plugins[q].args += args;
+    (impl->pluginmanager)->UpdatePlugin(params[name+"-module"], impl->plugins[q].args); 
+   }
+  }
+  params[name+"-modules"] += (params[name+"-module"]+" ");
+  return 0;
+ }
+ return 1;
 }
 
 int UtilityControl::OnBlock(const std::string & name, const std::string & full_statement)
@@ -114,6 +135,9 @@ int UtilityControl::OnBlock(const std::string & name, const std::string & full_s
   }
   for (int p=pstart;p<tokens.Size();++p) module_info.args += (tokens[p]+" ");
   RemoveUnnecessarySpaces(module_info.args);
+  // Load the plugin
+  (impl->pluginmanager)->LoadPlugin(module_info);
+  //
   impl->plugins.Append(module_info);
  }
  else if (name == "type")
