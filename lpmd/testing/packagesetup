@@ -59,5 +59,13 @@ directory tests
       pkgconfig += lpunit liblpmd-2.0
    end
 
+   binary quickmode
+      test = true
+      language = lpunit
+      sources = quickmode.unit
+      libraries += ../liblpmdutility.a
+      pkgconfig += lpunit liblpmd-2.0
+   end
+
 end
 
