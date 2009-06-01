@@ -34,10 +34,23 @@ enduse
 #    debug none
 #enduse
 
+use printatoms
+    from 0
+    to 0
+enduse
+
+use tempscaling
+    from 168.0
+    to 5.0
+enduse
+
 cellmanager linkedcell
 #cellmanager minimumimage
 
 potential lennardjones Ar Ar
 #integrator leapfrog start=0
 integrator euler start=0
+
+apply tempscaling start=100 end=5000 each=200
+visualize printatoms start=0 end=5000 each=1000
 

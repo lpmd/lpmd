@@ -28,6 +28,8 @@ class LPMD: public Application
    LPMD(int argc, const char * argv[]);
 
    void Iterate();
+   void RunVisualizers(long int currentstep);
+   void RunModifiers(long int currentstep);
 
  private:
    LPMDControl control;

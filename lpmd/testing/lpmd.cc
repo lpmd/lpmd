@@ -11,6 +11,7 @@
 #include <lpmd/properties.h>
 #include <lpmd/timer.h>
 #include <lpmd/configuration.h>
+#include <lpmd/visualizer.h>
 
 int main(int argc, const char * argv[])
 {
@@ -46,6 +47,10 @@ void LPMD::Iterate()
  {
   for (int k=0;k<atoms.Size();++k) atoms[k].Acceleration() = Vector(0.0, 0.0, 0.0);
   simulation->DoStep();
+  
+  RunModifiers(i);
+  RunVisualizers(i);
+
   if (i % 100 == 0)
   {
    double kin_en = KineticEnergy(atoms), pot_en = 0.0;
@@ -58,6 +63,26 @@ void LPMD::Iterate()
  timer.Stop();
  std::cout << "Simulation over " << nsteps << " steps\n";
  timer.ShowElapsedTimes();
+}
+
+void LPMD::RunVisualizers(long currentstep)
+{
+ Array<std::string> visualizers = StringSplit(control["visualize-modules"]);
+ for (int v=0;v<visualizers.Size();++v)
+ {
+  Visualizer & vis = CastModule<Visualizer>(pluginmanager[visualizers[v]]);
+  if (vis.IsActiveInStep(currentstep)) vis.Apply(*simulation);
+ }
+}
+
+void LPMD::RunModifiers(long currentstep)
+{
+ Array<std::string> modifiers = StringSplit(control["apply-modules"]);
+ for (int v=0;v<modifiers.Size();++v)
+ {
+  SystemModifier & sm = CastModule<SystemModifier>(pluginmanager[modifiers[v]]);
+  if (sm.IsActiveInStep(currentstep)) sm.Apply(*simulation);
+ }
 }
 
 LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", control), control(pluginmanager)

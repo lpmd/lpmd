@@ -97,6 +97,7 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
   (impl->pluginmanager)->LoadPlugin(module_info);
   //
   impl->plugins.Append(module_info);
+  params.Remove(name+"-module");
   return 0;
  }
  else if (((name == "property") || (name == "apply")) || (name == "visualize"))
@@ -108,11 +109,12 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
   {
    if (impl->plugins[q].id == params[name+"-module"]) 
    {
-    impl->plugins[q].args += args;
+    impl->plugins[q].args += (" "+args);
     (impl->pluginmanager)->UpdatePlugin(params[name+"-module"], impl->plugins[q].args); 
    }
   }
   params[name+"-modules"] += (params[name+"-module"]+" ");
+  params.Remove(name+"-module");
   return 0;
  }
  return 1;
