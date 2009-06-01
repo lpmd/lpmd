@@ -4,7 +4,7 @@
 
 name = lpmd
 fullname = 'LPMD'
-version = 0.6.0
+version = 0.6.0alpha
 author = 'GNM <gnm@gnm.cl>'
 prefix = /usr/local
 
@@ -19,9 +19,14 @@ end
 directory .
     staticlibrary liblpmdutility.a
        language = c++
-       sources = controlparser.cc quickmode.cc application.cc
+       sources = controlparser.cc quickmode.cc application.cc palmtree.cc
        pkgconfig += liblpmd-2.0
        installpath = lib
+    end
+
+    file config.h
+       sources = config.h.in
+       expand = version
     end
 
     binary lpmd

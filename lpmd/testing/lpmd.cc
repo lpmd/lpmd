@@ -5,6 +5,7 @@
  */
 
 #include "lpmd.h"
+#include "palmtree.h"
 #include "quickmode.h"
 #include <lpmd/combinedpotential.h>
 #include <lpmd/integrator.h>
@@ -134,16 +135,23 @@ void LPMD::ComputeProperties()
 
 void LPMD::RunVisualizers() { ApplySteppers<Visualizer>(pluginmanager, control, *simulation, "visualize"); }
 
-LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", control), control(pluginmanager)
+LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", "lpmd", control), control(pluginmanager)
 {
+ PrintPalmTree();
  QuickModeParser quick;
  quick.Parse(argc, argv);
- ParamList options;
- if (quick.Arguments().Size() == 1)
+ if (quick.Defined("help")) ShowHelp();
+ else
  {
-  std::istringstream generatedcontrol(quick.FormattedAsControlFile());
-  control.Read(generatedcontrol, options, "quickmode"); 
+  ParamList options;
+  if (quick.Arguments().Size() == 1)
+  {
+   std::istringstream generatedcontrol(quick.FormattedAsControlFile());
+   control.Read(generatedcontrol, options, "quickmode"); 
+   if (pluginmanager.IsLoaded("help_plugin")) ShowPluginHelp();
+   else if (!control.Defined("cell-type")) ShowHelp();
+  }
+  else control.Read(quick.Arguments()[1], options);  
  }
- else control.Read(quick.Arguments()[1], options);  
 }
 

@@ -31,49 +31,6 @@ CommonHandler::CommonHandler(const std::string & cmdnam, const std::string & ful
 
 CommonHandler::~CommonHandler() { delete scell; }
 
-void CommonHandler::BannerPrint(std::string text)
-{
- std::cout << std::setfill('*');
- std::cout << std::endl;
- std::cout << std::setw(80) << "" << std::endl;
- std::cout << "* " << std::setw(78) << std::left << text+" " << std::endl;
- std::cout << std::setw(80) << "" << std::endl;
- std::cout << std::setfill(' ');
-}
-
-void CommonHandler::LoadUseModules()
-{
- //
- // Load each of the modules called with "use", passing its parameters
- //
- CommonInputReader & param = GetInputReader();
- for (std::list<ModuleInfo>::const_iterator it=param.uselist.begin();it != param.uselist.end();++it)
- {
-  const ModuleInfo & minf = *it;
-  pluginman.LoadPlugin(minf.name, minf.id, minf.args);
- }
-}
-
-void CommonHandler::LoadModules()
-{
- PotentialArray & p_array = GetPotentialArray();
- CommonInputReader & param = GetInputReader();
- std::list<std::string> ptlist = StringSplit< std::list<std::string> >(param["potential-list"]);
- for (std::list<std::string>::const_iterator it=ptlist.begin();it!=ptlist.end();++it)
- {
-  std::list<std::string> tmp = StringSplit< std::list<std::string> >(*it, '#');
-  const std::string sp1 = tmp.front();
-  tmp.pop_front();
-  const std::string sp2 = tmp.front();
-  tmp.pop_front();
-  const std::string potname = tmp.front();
-  tmp.pop_front();
-  Potential & pot = CastModule<Potential>(pluginman[potname]);
-  pluginman[potname].SetUsed();
-  p_array.Set(sp1, sp2, pot);
- }
-}
-
 void CommonHandler::ShowConfigsInfo(std::vector<SimulationCell> & configs)
 {
  // Muestra informacion util acerca de las configuraciones
@@ -192,68 +149,6 @@ void CommonHandler::Initialize()
  else { } // modo restore, input-module esta vacio
 }
 
-void CommonHandler::ShowHelp()
-{
- std::cerr << name << " version " << VERSION;
- std::cerr << '\n';
- std::cerr << "Using liblpmd version " << lpmd::GlobalSession["libraryversion"] << std::endl << std::endl;
- std::cerr << "Usage: " << cmdname << " [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]";
- std::cerr << " [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]";
- std::cerr << " [--option | -O <option=value,option=value,...>] [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]";
- std::cerr << " [--use | -u plugin:opt1,opt2,...] [--cellmanager | -c plugin:opt1,opt2,...] [--replace-cell | -r] [file.control]\n";
- std::cerr << "       " << cmdname << " [--pluginhelp | -p <pluginname>]\n";
- std::cerr << "       " << cmdname << " [--help | -h]\n";
- exit(1);
-}
-
-void CommonHandler::ShowPluginHelp(std::string plugin)
-{
- std::ostringstream str;
- str << "Show "<<plugin<<" Plugin Information.";
- BannerPrint(str.str());
- PluginManager pm;
- pm.LoadPlugin(plugin, "tempmodule", "");
- std::cout << "Loaded from file: " << pm["tempmodule"]["fullpath"] << '\n';
- if (pm["tempmodule"].Defined("version")) 
-    std::cout << "Plugin version: " << pm["tempmodule"]["version"] << '\n';
- std::cout << '\n';
- pm["tempmodule"].ShowHelp();
- BannerPrint("Provides");
- std::cout << "     >> " << pm["tempmodule"].Provides() << '\n';
- BannerPrint("Arguments Required or supported");
- std::cout << "     >> " << pm["tempmodule"].Keywords() << '\n';
- BannerPrint("Default values for parameters");
- pm["tempmodule"].Show(std::cout);
- exit(1);
-}
-
-void CommonHandler::SetOptionVariables(CommonCmdLineParser & clp, ParamList & ov)
-{
- if (clp.Defined("option"))
- {
-  std::list<std::string> kwlist = StringSplit< std::list<std::string> >(clp["option-keywordvalue"], ',');
-  for (std::list<std::string>::const_iterator it=kwlist.begin();it!=kwlist.end();++it)
-  {
-   std::vector<std::string> kwpair = StringSplit< std::vector<std::string> >(*it, '=');
-   ov.AssignParameter(kwpair[0], kwpair[1]);
-  } 
- }
-}
-
-// FIXME: Esta funcion quiza podria ser portada a liblpmd en util.cc
-long int StringSimpleHash(const std::string & text)
-{
- uint16_t hash1 = 0xff, hash2 = 0xff;
- for (int i=0;i<text.size();++i)
- {
-  hash1 += ((uint8_t)(text[i]));
-  hash2 += hash1;
- }
- hash1 = (hash1 & 0xff)+(hash1 >> 8);
- hash2 = (hash2 & 0xff)+(hash2 >> 8);
- return (hash1*(0xff)+hash2);
-}
-
 const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp)
 {
  std::string tline = t+" ";
@@ -282,22 +177,6 @@ const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, Co
  if (s == 0xb848) clp["-magic3"] = "true";
  for (unsigned int i=0;i<args.size();++i) tline += (args[i]+" ");
  return tline;
-}
-
-const std::string CommonHandler::ParseQuickModeOptions(const std::string & t, CommonCmdLineParser & clp, ModuleInfo & minf)
-{
- const std::string ll = ParseQuickModeOptions(t, clp);
- std::vector<std::string> args, ospl = StringSplit< std::vector<std::string> >(clp[t+"-options"], ':');
- if (ospl.size() > 1) args = StringSplit< std::vector<std::string> >(ospl[1], ',');
- std::string useargs = "";
- for (unsigned int i=0;i<args.size();++i)
- {
-  std::vector<std::string> tmp = StringSplit< std::vector<std::string> >(args[i], '=');
-  useargs += (tmp[0]+" "+tmp[1]+" ");
- }
- minf.name = minf.id = ospl[0];
- minf.args = useargs;
- return ll; 
 }
 
 //

@@ -17,8 +17,12 @@ using namespace lpmd;
 class Application
 {
  public:
-   Application(const std::string & appname, UtilityControl & uc);
+   Application(const std::string & appname, const std::string & cmdname, UtilityControl & uc);
    ~Application();
+
+   void PrintBanner(const std::string & text);
+   void ShowPluginHelp();
+   void ShowHelp();
 
    virtual void CheckConsistency();
    virtual void ConstructCell();
@@ -30,6 +34,8 @@ class Application
    int Run();
 
  protected:
+   const std::string name;
+   const std::string cmdname;
    PluginManager pluginmanager;
    UtilityControl & innercontrol;
    Simulation * simulation;
