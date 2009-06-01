@@ -6,6 +6,7 @@
 
 #include <lpmd/array.h>
 #include <lpmd/util.h>
+#include <lpmd/property.h>
 #include "controlparser.h"
 
 class UControlImpl

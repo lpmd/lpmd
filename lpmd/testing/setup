@@ -19,9 +19,9 @@ languageCompilation = { 'c++': '%(compiler)s %(compilerflags)s -c %(source)s -o 
                         'c': '%(compiler)s %(compilerflags)s -c %(source)s -o %(object)s',
                         'lpunit': '%(compiler)s %(source)s - | g++ %(compilerflags)s -x c++ -c -o %(object)s -' }
 
-languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
-                    'c': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
-                    'lpunit': '%(linker)s -o %(target)s %(object)s %(linkflags)s' }
+languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
+                    'c': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
+                    'lpunit': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s' }
 
 languageStaticLibraryPacking  = { 'c++': 'ar rcs %(target)s %(object)s',
                                   'c': 'ar rcs %(target)s %(object)s',
@@ -151,12 +151,13 @@ class Language(Item):
         compilableSources = [x for x in sources if self.IsFileCompilable(x)]
         return pattern % {'target': target.name, 'compiler': target.compiler, 'linkflags': target.libraries, 
                           'compilerflags': target.flags, 'linker': target.linker, 
-                          'source': ' '.join(compilableSources), 'object': ' '.join(objects)}
+                          'source': ' '.join(compilableSources), 'prefix': target.setup.prefix, 'object': ' '.join(objects)}
 
 class Target(Item):
 
     def __init__(self, setup, directory, targettype, name, **kwargs):
         Item.__init__(self, name, targetFields, kwargs)
+        self.setup = setup
         self.targettype = targettype
         if self.targettype in ('binary', 'script'):
            if not hasattr(self, 'test'): self.test = False
@@ -234,17 +235,27 @@ class Directory(dict):
 
     def RenderMakefile(self, subdirs):
         already_included_dependencies = []
+        setuppath = './setup'
+        if self.name != '.':
+           assert not '/' in self.name
+           setuppath = '../setup'
         mf = '#\n#\n#\n\n'
         if hasattr(self.setup, 'version'): mf += ('VERSION=\"%s\"\n\n' % self.setup.version)
         mf += ('TARGETS='+' '.join([z for z in self.sortedtargets if not hasattr(self[z], 'test') or not self[z].test])+'\n\n')
         if len(subdirs) > 0:
            mf += 'all: subdirs $(TARGETS)\n\n'
+           if self.name == '.':
+              mf += 'Makefile: packagesetup\n'
+              mf += ('\t%s --prefix=%s\n\n' % (setuppath, self.setup.prefix))
            mf += 'subdirs:\n'
            for d in subdirs: mf += ('\tcd %s && $(MAKE)\n' % d)
            mf += '\n'
            mf += 'install: subdirs-install $(TARGETS)\n'
         else:
            mf += 'all: $(TARGETS)\n\n'
+           if self.name == '.':
+              mf += 'Makefile: packagesetup\n'
+              mf += ('\t%s --prefix=%s\n\n' % (setuppath, self.setup.prefix))
            mf += 'install: $(TARGETS)\n'
         pathlist = uniquelist([self[t].installpath for t in self.sortedtargets if hasattr(self[t], 'installpath')])
         mf += '\n'
@@ -266,10 +277,6 @@ class Directory(dict):
         for ld in ldconfig_libs: mf += '\tldconfig -n %s\n' % ld
         mf += '\n'
         objects = []
-        setuppath = './setup'
-        if self.name != '.':
-           assert not '/' in self.name
-           setuppath = '../setup'
         for t in self.sortedtargets: 
             dependencies = self[t].sources
             if not hasattr(self[t], 'language') or not self[t].language.IsCompiled(): 

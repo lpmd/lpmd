@@ -12,6 +12,11 @@
 #include <lpmd/timer.h>
 #include <lpmd/configuration.h>
 #include <lpmd/visualizer.h>
+#include <lpmd/property.h>
+#include <lpmd/storedvalue.h>
+#include <lpmd/value.h>
+
+#include <fstream>
 
 int main(int argc, const char * argv[])
 {
@@ -31,12 +36,14 @@ void LPMD::Iterate()
 {
  BasicParticleSet & atoms = simulation->Atoms();
  //
- // Set solver first
  simulation->SetIntegrator(CastModule<Integrator>(pluginmanager[control["integrator-module"]]));
  //
  for (int i=0;i<atoms.Size();++i) atoms[i].Acceleration() = Vector(0.0, 0.0, 0.0);
  simulation->Potentials().Initialize(*simulation);
  simulation->Potentials().UpdateForces(*simulation);
+
+ OpenPropertyStreams();
+
  //
  // MD loop
  //
@@ -48,8 +55,9 @@ void LPMD::Iterate()
   for (int k=0;k<atoms.Size();++k) atoms[k].Acceleration() = Vector(0.0, 0.0, 0.0);
   simulation->DoStep();
   
-  RunModifiers(i);
-  RunVisualizers(i);
+  RunModifiers();
+  ComputeProperties();
+  RunVisualizers();
 
   if (i % 100 == 0)
   {
@@ -60,30 +68,71 @@ void LPMD::Iterate()
    std::cout << i << "  " << pot_en << "  " << kin_en << "  " << tot_en << "  " << temp << '\n';
   }
  }
+
+ ClosePropertyStreams();
+ 
  timer.Stop();
  std::cout << "Simulation over " << nsteps << " steps\n";
  timer.ShowElapsedTimes();
 }
 
-void LPMD::RunVisualizers(long currentstep)
+template <typename T> void ApplySteppers(PluginManager & pluginmanager, LPMDControl & control, Simulation & simulation, const std::string & kind)
 {
- Array<std::string> visualizers = StringSplit(control["visualize-modules"]);
- for (int v=0;v<visualizers.Size();++v)
+ long currentstep = simulation.CurrentStep();
+ Array<std::string> modules = StringSplit(control[kind+"-modules"]);
+ for (int p=0;p<modules.Size();++p)
  {
-  Visualizer & vis = CastModule<Visualizer>(pluginmanager[visualizers[v]]);
-  if (vis.IsActiveInStep(currentstep)) vis.Apply(*simulation);
+  T & mod = CastModule<T>(pluginmanager[modules[p]]);
+  if (mod.IsActiveInStep(currentstep)) mod.Apply(simulation);
  }
 }
 
-void LPMD::RunModifiers(long currentstep)
+void LPMD::RunModifiers() { ApplySteppers<SystemModifier>(pluginmanager, control, *simulation, "apply"); }
+
+void LPMD::OpenPropertyStreams()
 {
- Array<std::string> modifiers = StringSplit(control["apply-modules"]);
- for (int v=0;v<modifiers.Size();++v)
+ Array<std::string> properties = StringSplit(control["property-modules"]); 
+ for (int p=0;p<properties.Size();++p)
  {
-  SystemModifier & sm = CastModule<SystemModifier>(pluginmanager[modifiers[v]]);
-  if (sm.IsActiveInStep(currentstep)) sm.Apply(*simulation);
+  const Parameter & pluginname = properties[p];
+  const std::string filename = pluginmanager[pluginname]["output"];
+  propertystream.Append(new std::ofstream(filename.c_str()));
+  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
+  lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
+  value.ClearAverage();
  }
 }
+
+void LPMD::ClosePropertyStreams()
+{
+ Array<std::string> properties = StringSplit(control["property-modules"]); 
+ for (int p=0;p<properties.Size();++p)
+ {
+  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
+  lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
+  value.OutputAverageTo(*(propertystream[p]));
+  delete propertystream[p];
+ }
+}
+
+void LPMD::ComputeProperties()
+{
+ long currentstep = simulation->CurrentStep();
+ Array<std::string> properties = StringSplit(control["property-modules"]); 
+ for (int p=0;p<properties.Size();++p)
+ {
+  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
+  if (prop.IsActiveInStep(currentstep)) 
+  {
+   prop.Evaluate(*simulation, simulation->Potentials());
+   lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
+   if (bool(pluginmanager[properties[p]]["average"])) value.AddToAverage();
+   else value.OutputTo(*(propertystream[p]));
+  }
+ }
+}
+
+void LPMD::RunVisualizers() { ApplySteppers<Visualizer>(pluginmanager, control, *simulation, "visualize"); }
 
 LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", control), control(pluginmanager)
 {

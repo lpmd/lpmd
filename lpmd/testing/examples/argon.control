@@ -39,6 +39,13 @@ use printatoms
     to 0
 enduse
 
+use gdr
+    rcut 7.0
+    output gdr.dat
+    bins 200
+    average true
+enduse
+
 use tempscaling
     from 168.0
     to 5.0
@@ -52,5 +59,6 @@ potential lennardjones Ar Ar
 integrator euler start=0
 
 apply tempscaling start=100 end=5000 each=200
+property gdr start=0 end=5000 each=500
 visualize printatoms start=0 end=5000 each=1000
 

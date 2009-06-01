@@ -10,6 +10,8 @@
 #include "application.h"
 #include "controlparser.h"
 
+#include <iostream>
+
 class LPMDControl: public UtilityControl
 {
  public:
@@ -27,12 +29,17 @@ class LPMD: public Application
  public:
    LPMD(int argc, const char * argv[]);
 
+   void OpenPropertyStreams();
+   void ClosePropertyStreams();
+
    void Iterate();
-   void RunVisualizers(long int currentstep);
-   void RunModifiers(long int currentstep);
+   void ComputeProperties();
+   void RunVisualizers();
+   void RunModifiers();
 
  private:
    LPMDControl control;
+   Array<std::ostream *> propertystream; 
 };
 
 #endif
