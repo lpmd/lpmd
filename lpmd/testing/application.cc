@@ -29,6 +29,7 @@ int Application::Run()
  // 
  ConstructCell();
  FillAtoms();
+ AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
  //
@@ -132,6 +133,30 @@ void Application::FillAtoms()
  {
   pluginmanager[innercontrol["cellmanager-module"]].Show(std::cout);
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
+ }
+}
+
+void Application::AdjustAtomProperties()
+{
+ BasicParticleSet & atoms = simulation->Atoms();
+ // FIXME: por ahora solo se considera atom-group y charge-group 
+ // como las especies atomicas 
+ for (long int i=0;i<atoms.Size();++i)
+ {
+  for (int q=0;q<innercontrol.massgroups.Parameters().Size();++q)
+     if (atoms[i].Symbol() == innercontrol.massgroups.Parameters()[q]) 
+        atoms[i].Mass() = innercontrol.massgroups[innercontrol.massgroups.Parameters()[q]];
+  for (int q=0;q<innercontrol.chargegroups.Parameters().Size();++q)
+     if (atoms[i].Symbol() == innercontrol.chargegroups.Parameters()[q]) 
+        atoms[i].Charge() = innercontrol.chargegroups[innercontrol.chargegroups.Parameters()[q]];
+ }
+ if (innercontrol.Defined("showinitialconfig"))
+ {
+  for (long int i=0;i<atoms.Size();++i)
+  {
+   std::cout << i << ": " << atoms[i].Symbol() << " Mass = " << atoms[i].Mass() << " Charge = " << atoms[i].Charge() << " ";
+   std::cout << "Position = " << atoms[i].Position() << '\n';
+  }
  }
 }
 

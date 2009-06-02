@@ -31,6 +31,9 @@ class UtilityControl: public ControlFile
    ParamList & Potentials() const;
    ParamList & Bonds() const;
 
+   //
+   ParamList massgroups, chargegroups;
+
  private:
    class UControlImpl * impl;
 };

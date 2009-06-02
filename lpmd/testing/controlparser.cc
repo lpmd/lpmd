@@ -37,6 +37,8 @@ UtilityControl::UtilityControl(PluginManager & pm)
  DeclareStatement("cellmanager", "module");
  DeclareStatement("set", "option value");
  DeclareStatement("bond", "a b length");
+ DeclareStatement("mass", "group value");
+ DeclareStatement("charge", "group value");
 
  //
  DeclareBlock("use", "enduse");
@@ -76,6 +78,10 @@ int UtilityControl::OnRegularStatement(const std::string & name, const std::stri
   impl->bonds[params["bond-a"]+"-"+params["bond-b"]] = params["bond-length"];
  }
  else if (name == "plugindir") impl->pluginpath.Append(params["plugindir-dir"]);
+ else if (name == "mass")
+    massgroups[params["mass-group"]] = params["mass-value"];
+ else if (name == "charge")
+    chargegroups[params["charge-group"]] = params["charge-value"];
  return 0;
 }
 

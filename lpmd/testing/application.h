@@ -27,6 +27,7 @@ class Application
    virtual void CheckConsistency();
    virtual void ConstructCell();
    virtual void FillAtoms();
+   virtual void AdjustAtomProperties();
    virtual void ApplyPrepares();
    virtual void SetPotentials();
    virtual void Iterate();
