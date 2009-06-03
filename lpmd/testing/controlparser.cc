@@ -51,9 +51,21 @@ UtilityControl::UtilityControl(PluginManager & pm)
  params["periodic-y"] = "true";
  params["periodic-z"] = "true";
  params["cell-scale"] = "1.0";
+ params["replacecell"] = "false";
 }
 
 UtilityControl::~UtilityControl() { delete impl; }
+
+void UtilityControl::Read(const std::string & filename, const ParamList & options)
+{
+ ControlFile::Read(filename, options);
+}
+
+void UtilityControl::Read(std::istream & istr, const ParamList & options, const std::string & filename)
+{
+ ControlFile::Read(istr, options, filename);
+ if (bool((*this)["replacecell"])) (*this)["cell-type"] = "automatic";
+}
 
 int UtilityControl::OnRegularStatement(const std::string & name, const std::string & keywords)
 {

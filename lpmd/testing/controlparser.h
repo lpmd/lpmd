@@ -21,6 +21,8 @@ class UtilityControl: public ControlFile
    UtilityControl(PluginManager & pm);
    virtual ~UtilityControl();
 
+   void Read(const std::string & filename, const ParamList & options);
+   void Read(std::istream & istr, const ParamList & options, const std::string & filename="Unnamed");
    int OnRegularStatement(const std::string & name, const std::string & keywords);
    int OnNonRegularStatement(const std::string & name, const std::string & full_statement);
    int OnBlock(const std::string & name, const std::string & full_statement);

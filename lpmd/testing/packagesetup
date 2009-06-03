@@ -19,7 +19,7 @@ end
 directory .
     staticlibrary liblpmdutility.a
        language = c++
-       sources = controlparser.cc quickmode.cc application.cc palmtree.cc
+       sources = controlparser.cc quickmode.cc replayintegrator.cc application.cc help.cc palmtree.cc
        pkgconfig += liblpmd-2.0
        installpath = lib
     end

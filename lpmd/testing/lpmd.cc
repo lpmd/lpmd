@@ -6,13 +6,11 @@
 
 #include "lpmd.h"
 #include "palmtree.h"
-#include "quickmode.h"
 #include <lpmd/combinedpotential.h>
 #include <lpmd/integrator.h>
 #include <lpmd/properties.h>
 #include <lpmd/timer.h>
 #include <lpmd/configuration.h>
-#include <lpmd/visualizer.h>
 #include <lpmd/property.h>
 #include <lpmd/storedvalue.h>
 #include <lpmd/value.h>
@@ -43,8 +41,6 @@ void LPMD::Iterate()
  simulation->Potentials().Initialize(*simulation);
  simulation->Potentials().UpdateForces(*simulation);
 
- OpenPropertyStreams();
-
  //
  // MD loop
  //
@@ -61,25 +57,10 @@ void LPMD::Iterate()
   RunVisualizers();
  }
 
- ClosePropertyStreams();
- 
  timer.Stop();
  std::cout << "Simulation over " << nsteps << " steps\n";
  timer.ShowElapsedTimes();
 }
-
-template <typename T> void ApplySteppers(PluginManager & pluginmanager, LPMDControl & control, Simulation & simulation, const std::string & kind)
-{
- long currentstep = simulation.CurrentStep();
- Array<std::string> modules = StringSplit(control[kind+"-modules"]);
- for (int p=0;p<modules.Size();++p)
- {
-  T & mod = CastModule<T>(pluginmanager[modules[p]]);
-  if (mod.IsActiveInStep(currentstep)) mod.Apply(simulation);
- }
-}
-
-void LPMD::RunModifiers() { ApplySteppers<SystemModifier>(pluginmanager, control, *simulation, "apply"); }
 
 void LPMD::OpenPropertyStreams()
 {
@@ -124,25 +105,9 @@ void LPMD::ComputeProperties()
  }
 }
 
-void LPMD::RunVisualizers() { ApplySteppers<Visualizer>(pluginmanager, control, *simulation, "visualize"); }
-
 LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", "lpmd", control), control(pluginmanager)
 {
  PrintPalmTree();
- QuickModeParser quick;
- quick.Parse(argc, argv);
- if (quick.Defined("help")) ShowHelp();
- else
- {
-  ParamList options;
-  if (quick.Arguments().Size() == 1)
-  {
-   std::istringstream generatedcontrol(quick.FormattedAsControlFile());
-   control.Read(generatedcontrol, options, "quickmode"); 
-   if (pluginmanager.IsLoaded("help_plugin")) ShowPluginHelp();
-   else if (!control.Defined("cell-type")) ShowHelp();
-  }
-  else control.Read(quick.Arguments()[1], options);  
- }
+ ProcessControl(argc, argv);
 }
 

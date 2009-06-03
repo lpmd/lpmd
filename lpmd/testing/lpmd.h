@@ -34,12 +34,9 @@ class LPMD: public Application
 
    void Iterate();
    void ComputeProperties();
-   void RunVisualizers();
-   void RunModifiers();
 
  private:
    LPMDControl control;
-   Array<std::ostream *> propertystream; 
 };
 
 #endif

@@ -24,10 +24,18 @@ class Application
    void ShowPluginHelp();
    void ShowHelp();
 
+   void RunModifiers();
+   void RunVisualizers();
+   void SaveCurrentConfiguration();
+
+   virtual void ProcessControl(int argc, const char * argv[]);
    virtual void CheckConsistency();
    virtual void ConstructCell();
+   virtual void ConstructSimulation();
    virtual void FillAtoms();
    virtual void AdjustAtomProperties();
+   virtual void OpenOutputStreams();
+   virtual void CloseOutputStreams();
    virtual void ApplyPrepares();
    virtual void SetPotentials();
    virtual void Iterate();
@@ -41,6 +49,8 @@ class Application
    UtilityControl & innercontrol;
    Simulation * simulation;
    NonOrthogonalCell cell;
+   Array<std::ostream *> propertystream; 
+   std::ofstream ** outputstream;
 };
 
 #endif

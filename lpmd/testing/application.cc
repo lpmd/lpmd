@@ -5,20 +5,23 @@
  */
 
 #include "application.h"
-#include "config.h"
+#include "quickmode.h"
 #include <lpmd/simulationbuilder.h>
 #include <lpmd/cellgenerator.h>
+#include <lpmd/cellwriter.h>
 #include <lpmd/systemmodifier.h>
+#include <lpmd/visualizer.h>
 #include <lpmd/combinedpotential.h>
 #include <lpmd/properties.h>
-#include <lpmd/session.h>
+#include <lpmd/paramlist.h>
 
 #include <iostream>
-#include <iomanip>
+#include <fstream>
 #include <cstdlib>
 
 Application::Application(const std::string & appname, const std::string & cmd, UtilityControl & uc): name(appname), cmdname(cmd), innercontrol(uc)
 {
+ simulation = 0;
  srand48(long(time(NULL)));
 }
 
@@ -29,53 +32,36 @@ int Application::Run()
  CheckConsistency();
  // 
  ConstructCell();
+ ConstructSimulation();
  FillAtoms();
  AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
  //
+ OpenOutputStreams();
  Iterate();
+ CloseOutputStreams();
+ //
  return 0;
 }
 
-void Application::PrintBanner(const std::string & text)
+void Application::ProcessControl(int argc, const char * argv[])
 {
- std::cout << std::setfill('*');
- std::cout << std::endl;
- std::cout << std::setw(80) << "" << std::endl;
- std::cout << "* " << std::setw(78) << std::left << text+" " << std::endl;
- std::cout << std::setw(80) << "" << std::endl;
- std::cout << std::setfill(' ');
-}
-
-void Application::ShowHelp()
-{
- std::cerr << name << " version " << VERSION;
- std::cerr << '\n';
- std::cerr << "Using liblpmd version " << lpmd::GlobalSession["libraryversion"] << std::endl << std::endl;
- std::cerr << "Usage: " << cmdname << " [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]";
- std::cerr << " [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]";
- std::cerr << " [--option | -O <option=value,option=value,...>] [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]";
- std::cerr << " [--use | -u plugin:opt1,opt2,...] [--cellmanager | -c plugin:opt1,opt2,...] [--replace-cell | -r] [file.control]\n";
- std::cerr << "       " << cmdname << " [--pluginhelp | -p <pluginname>]\n";
- std::cerr << "       " << cmdname << " [--help | -h]\n";
- exit(1);
-}
-
-void Application::ShowPluginHelp()
-{
- std::cout << "Loaded from file: " << pluginmanager["help_plugin"]["fullpath"] << '\n';
- if (pluginmanager["help_plugin"].Defined("version")) 
-    std::cout << "Plugin version: " << pluginmanager["help_plugin"]["version"] << '\n';
- std::cout << '\n';
- pluginmanager["help_plugin"].ShowHelp();
- PrintBanner("Provides");
- std::cout << "     >> " << pluginmanager["help_plugin"].Provides() << '\n';
- PrintBanner("Arguments Required or supported");
- std::cout << "     >> " << pluginmanager["help_plugin"].Keywords() << '\n';
- PrintBanner("Default values for parameters");
- pluginmanager["help_plugin"].Show(std::cout);
- exit(1);
+ QuickModeParser quick;
+ quick.Parse(argc, argv);
+ if (quick.Defined("help")) ShowHelp();
+ else
+ {
+  ParamList options;
+  if (quick.Arguments().Size() == 1)
+  {
+   std::istringstream generatedcontrol(quick.FormattedAsControlFile());
+   innercontrol.Read(generatedcontrol, options, "quickmode"); 
+   if (pluginmanager.IsLoaded("help_plugin")) ShowPluginHelp();
+   else if (!innercontrol.Defined("cell-type")) ShowHelp();
+  }
+  else innercontrol.Read(quick.Arguments()[1], options);
+ }
 }
 
 void Application::CheckConsistency()
@@ -86,7 +72,13 @@ void Application::CheckConsistency()
 void Application::ConstructCell()
 {
  std::string celltype = innercontrol["cell-type"];
- if (celltype == "cubic")
+ if (celltype == "automatic")
+ {
+  cell[0] = e1;
+  cell[1] = e2;
+  cell[2] = e3;
+ }
+ else if (celltype == "cubic")
  {
   double length = double(innercontrol["cell-a"]);
   double scale = double(innercontrol["cell-scale"]);
@@ -123,22 +115,26 @@ void Application::ConstructCell()
  }
 }
 
-void Application::FillAtoms()
+void Application::ConstructSimulation()
 {
  simulation = &(SimulationBuilder::CreateGeneric());
+ #warning "SimulationBuilder::CreateGeneric, buscar metodo para crear una Simulation especializada"
  for (int q=0;q<3;++q) simulation->Cell()[q] = cell[q];
+}
+
+void Application::FillAtoms()
+{
  CellGenerator & cg = CastModule<CellGenerator>(pluginmanager["input1"]);
- pluginmanager["input1"].Show(std::cout);
  cg.Generate(*simulation);
  if (innercontrol.Defined("cellmanager-module"))
  {
-  pluginmanager[innercontrol["cellmanager-module"]].Show(std::cout);
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
  }
 }
 
 void Application::AdjustAtomProperties()
 {
+ if (simulation == 0) throw InvalidOperation("Adjusting atomic properties on an uninitialized Simulation");
  BasicParticleSet & atoms = simulation->Atoms();
  // FIXME: por ahora solo se considera atom-group y charge-group 
  // como las especies atomicas 
@@ -167,7 +163,6 @@ void Application::ApplyPrepares()
  for (int p=0;p<prepares.Size();++p)
  {
   std::string id = "prepare"+ToString(p+1);
-  pluginmanager[id].Show(std::cout);
   SystemModifier & sm = CastModule<SystemModifier>(pluginmanager[id]);
   sm.Apply(*simulation);
  } 
@@ -175,6 +170,7 @@ void Application::ApplyPrepares()
 
 void Application::SetPotentials()
 {
+ if (simulation == 0) throw InvalidOperation("Setting potentials on an uninitialized Simulation");
  CombinedPotential & potentials = simulation->Potentials();
  Array<Parameter> pkeys = innercontrol.Potentials().Parameters();
  for (int p=0;p<pkeys.Size();++p) 
@@ -187,10 +183,55 @@ void Application::SetPotentials()
  } 
 }
 
-void Application::Iterate()
+void Application::Iterate() {  }
+
+template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityControl & control, Simulation & simulation, const std::string & kind)
 {
-
-
+ long currentstep = simulation.CurrentStep();
+ Array<std::string> modules = StringSplit(control[kind+"-modules"]);
+ for (int p=0;p<modules.Size();++p)
+ {
+  T & mod = CastModule<T>(pluginmanager[modules[p]]);
+  if (mod.IsActiveInStep(currentstep)) mod.Apply(simulation);
+ }
 }
 
+void Application::RunModifiers() { ApplySteppers<SystemModifier>(pluginmanager, innercontrol, *simulation, "apply"); }
+
+void Application::RunVisualizers() { ApplySteppers<Visualizer>(pluginmanager, innercontrol, *simulation, "visualize"); }
+
+void Application::OpenOutputStreams()
+{
+ Array<std::string> outstreams = StringSplit(innercontrol["output-modules"]); 
+ outputstream = new std::ofstream*[outstreams.Size()];
+ for (int p=0;p<outstreams.Size();++p)
+ {
+  const std::string & plugin_id = "output"+ToString(p+1);
+  const std::string filename = pluginmanager[plugin_id]["file"];
+  outputstream[p] = new std::ofstream(filename.c_str());
+  CellWriter & cellwriter = CastModule<CellWriter>(pluginmanager[plugin_id]);
+  cellwriter.WriteHeader(*(outputstream[p]));
+ }
+}
+
+void Application::CloseOutputStreams()
+{
+ Array<std::string> outstreams = StringSplit(innercontrol["output-modules"]); 
+ for (int p=0;p<outstreams.Size();++p) delete outputstream[p];
+ delete [] outputstream;
+}
+
+void Application::SaveCurrentConfiguration()
+{
+ Array<std::string> outstreams = StringSplit(innercontrol["output-modules"]); 
+ for (int p=0;p<outstreams.Size();++p)
+ {
+  const std::string & plugin_id = "output"+ToString(p+1);
+  Module & modl = pluginmanager[plugin_id];
+  CellWriter & cellwriter = CastModule<CellWriter>(modl);
+  int start = modl["start"], end = modl["end"], each = modl["each"];
+  if (Stepper(start,end,each).IsActiveInStep(simulation->CurrentStep()))
+     cellwriter.WriteCell(*(outputstream[p]), *simulation);
+ }
+}
 
