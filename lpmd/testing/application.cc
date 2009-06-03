@@ -15,10 +15,11 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cstdlib>
 
 Application::Application(const std::string & appname, const std::string & cmd, UtilityControl & uc): name(appname), cmdname(cmd), innercontrol(uc)
 {
-
+ srand48(long(time(NULL)));
 }
 
 Application::~Application() { }

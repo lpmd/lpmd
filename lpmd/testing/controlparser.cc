@@ -39,6 +39,7 @@ UtilityControl::UtilityControl(PluginManager & pm)
  DeclareStatement("bond", "a b length");
  DeclareStatement("mass", "group value");
  DeclareStatement("charge", "group value");
+ DeclareStatement("monitor", "properties start end each output");
 
  //
  DeclareBlock("use", "enduse");
@@ -82,6 +83,21 @@ int UtilityControl::OnRegularStatement(const std::string & name, const std::stri
     massgroups[params["mass-group"]] = params["mass-value"];
  else if (name == "charge")
     chargegroups[params["charge-group"]] = params["charge-value"];
+ else if (name == "monitor")
+ {
+  std::string line;
+  line = "visualize monitor start="+params["monitor-start"]+" ";
+  line += ("end="+params["monitor-end"]+" each="+params["monitor-each"]+"\n");
+  if (params["monitor-output"] == "") params["monitor-output"] = "-";
+  
+  ModuleInfo module_info("", "", ""); // FIXME
+  module_info.name = "monitor";
+  module_info.id = "monitor";
+  module_info.args = ("properties "+params["monitor-properties"]+" output "+params["monitor-output"]);
+  (impl->pluginmanager)->LoadPlugin(module_info);
+  impl->plugins.Append(module_info);
+  ReadLine(line);
+ }
  return 0;
 }
 

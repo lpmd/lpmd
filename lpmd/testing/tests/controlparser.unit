@@ -361,3 +361,16 @@
 }
 @end
 
+@test Instruccion monitor
+{
+ std::string data = "#\n#\n#\n";
+ data += "monitor step,potential-energy,temperature start=10 end=700 each=50\n";
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["visualize-modules"], "monitor "
+}
+@end
+

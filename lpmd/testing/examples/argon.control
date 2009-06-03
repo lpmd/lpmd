@@ -5,8 +5,8 @@ output xyz output.xyz each=10
 
 steps 5000
 
-#monitor potential-energy,kinetic-energy,total-energy,temperature start=0 end=1000 each=10
-prepare temperature t=168
+monitor step,potential-energy,kinetic-energy,total-energy,temperature start=0 end=5000 each=100
+prepare temperature t=10.0
 
 use lennardjones
     sigma 3.41
@@ -39,16 +39,22 @@ use printatoms
     to 0
 enduse
 
-use gdr
-    rcut 7.0
-    output gdr.dat
-    bins 200
-    average true
+use cna
+    rcut 4.6
+    output cna.dat
+    mode statistics
+    average false
 enduse
 
 use tempscaling
     from 168.0
     to 5.0
+enduse
+
+use veldist
+    bins 200
+    output veldist.dat
+    average true
 enduse
 
 cellmanager linkedcell
@@ -58,7 +64,6 @@ potential lennardjones Ar Ar
 #integrator leapfrog start=0
 integrator euler start=0
 
-apply tempscaling start=100 end=5000 each=200
-property gdr start=0 end=5000 each=500
-visualize printatoms start=0 end=5000 each=1000
+#property cna start=0 end=5000 each=500
+#property veldist start=0 end=5000 each=250
 

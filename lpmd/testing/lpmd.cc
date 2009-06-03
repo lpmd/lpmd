@@ -59,15 +59,6 @@ void LPMD::Iterate()
   RunModifiers();
   ComputeProperties();
   RunVisualizers();
-
-  if (i % 100 == 0)
-  {
-   double kin_en = KineticEnergy(atoms), pot_en = 0.0;
-   pot_en += simulation->Potentials().energy(*simulation);
-   double tot_en = kin_en + pot_en;
-   double temp = Temperature(atoms);
-   std::cout << i << "  " << pot_en << "  " << kin_en << "  " << tot_en << "  " << temp << '\n';
-  }
  }
 
  ClosePropertyStreams();

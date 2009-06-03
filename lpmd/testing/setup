@@ -67,6 +67,8 @@ def ObjectFromSource(s):
         if s.endswith('.'+ext): return s
     return s.replace(os.path.splitext(s)[1], '.o')
 
+def FileExtension(path): return path.split('.')[-1]
+
 def OutputFromCommand(cmd): return os.popen(cmd+' 2>/dev/null', 'r').read().strip()
 
 #
@@ -305,7 +307,8 @@ class Directory(dict):
                   if lapply != None: mf += ('\t'+lapply+'\n')
                   mf += '\n'
                   already_included_dependencies.append(s)
-              mf += (t+': '+' '.join(dependencies)+'\n')
+              explicit_libraries = [ lib for lib in self[t].libraries.split() if FileExtension(lib) in libraryExtensions]
+              mf += (t+': '+(' '.join(dependencies)+' '+' '.join(explicit_libraries)).strip()+'\n')
               if self[t].language.IsCompiled():
                  objlist = dependencies
                  if self[t].targettype == 'binary' or self[t].targettype == 'library' or self[t].targettype == 'module':
