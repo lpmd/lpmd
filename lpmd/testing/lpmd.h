@@ -32,6 +32,7 @@ class LPMD: public Application
    void OpenPropertyStreams();
    void ClosePropertyStreams();
 
+   void FillAtoms();
    void Iterate();
    void ComputeProperties();
 

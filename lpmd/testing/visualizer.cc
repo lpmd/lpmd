@@ -53,6 +53,7 @@ void Visualizer::Iterate()
  simulation->SetIntegrator(replay);
  while (reading)
  {
+  if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   ApplyPrepares();
   ApplyFilters();
   RunVisualizers();
@@ -68,12 +69,6 @@ void Visualizer::Iterate()
 
 Visualizer::Visualizer(int argc, const char * argv[]): Application("LPMD Visualizer", "lpmd-visualizer", control), control(pluginmanager)
 {
- inputfile_stream = 0;
  ProcessControl(argc, argv);
-}
-
-Visualizer::~Visualizer()
-{
- if (inputfile_stream != 0) delete inputfile_stream;
 }
 

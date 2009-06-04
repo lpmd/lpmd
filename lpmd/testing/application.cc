@@ -24,10 +24,14 @@
 Application::Application(const std::string & appname, const std::string & cmd, UtilityControl & uc): name(appname), cmdname(cmd), innercontrol(uc)
 {
  simulation = 0;
+ inputfile_stream = 0;
  srand48(long(time(NULL)));
 }
 
-Application::~Application() { }
+Application::~Application() 
+{ 
+ if (inputfile_stream != 0) delete inputfile_stream;
+}
 
 int Application::Run()
 {
@@ -65,6 +69,7 @@ void Application::ProcessControl(int argc, const char * argv[])
   }
   else innercontrol.Read(quick.Arguments()[1], options);
  }
+ if (quick.Defined("verbose")) innercontrol["verbose"] = "true";
 }
 
 void Application::CheckConsistency()
@@ -134,7 +139,6 @@ void Application::FillAtoms()
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
  }
 }
-
 
 void Application::FillAtomsFromCellReader()
 {

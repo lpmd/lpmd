@@ -31,6 +31,12 @@ int main(int argc, const char * argv[])
  }
 }
 
+void LPMD::FillAtoms() 
+{
+ Application::FillAtoms();
+ simulation->ShowInfo(std::cout);
+}
+
 void LPMD::Iterate()
 {
  BasicParticleSet & atoms = simulation->Atoms();

@@ -36,6 +36,7 @@ void Converter::Iterate()
  simulation->SetIntegrator(replay);
  while (reading)
  {
+  if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   ApplyPrepares();
   ApplyFilters();
   RunModifiers();
@@ -53,12 +54,6 @@ void Converter::Iterate()
 
 Converter::Converter(int argc, const char * argv[]): Application("LPMD Converter", "lpmd-converter", control), control(pluginmanager)
 {
- inputfile_stream = 0;
  ProcessControl(argc, argv);
-}
-
-Converter::~Converter()
-{
- if (inputfile_stream != 0) delete inputfile_stream;
 }
 
