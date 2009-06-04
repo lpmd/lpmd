@@ -4,7 +4,7 @@
  *
  */
 
-#include "converter.h"
+#include "visualizer.h"
 #include "quickmode.h"
 #include "replayintegrator.h"
 
@@ -17,7 +17,7 @@ int main(int argc, const char * argv[])
 {
  try
  {
-  Converter main(argc, argv);
+  Visualizer main(argc, argv);
   return main.Run();
  }
  catch (std::exception & e)
@@ -27,9 +27,26 @@ int main(int argc, const char * argv[])
  }
 }
 
-void Converter::FillAtoms() { FillAtomsFromCellReader(); }
+void Visualizer::FillAtoms() { FillAtomsFromCellReader(); }
 
-void Converter::Iterate()
+int Visualizer::Run()
+{
+ CheckConsistency();
+ // 
+ ConstructCell();
+ ConstructSimulation();
+ FillAtoms();
+ AdjustAtomProperties();
+ SetPotentials();
+ ApplyPrepares();
+ ApplyFilters();
+ //
+ Iterate();
+ //
+ return 0;
+}
+
+void Visualizer::Iterate()
 {
  bool reading = true;
  ReplayIntegrator replay;
@@ -38,9 +55,7 @@ void Converter::Iterate()
  {
   ApplyPrepares();
   ApplyFilters();
-  RunModifiers();
   RunVisualizers();
-  SaveCurrentConfiguration();
   if (inputfile_stream == 0) break;
   // 
   Module & inputmodule = pluginmanager["input1"];
@@ -51,13 +66,13 @@ void Converter::Iterate()
  }
 }
 
-Converter::Converter(int argc, const char * argv[]): Application("LPMD Converter", "lpmd-converter", control), control(pluginmanager)
+Visualizer::Visualizer(int argc, const char * argv[]): Application("LPMD Visualizer", "lpmd-visualizer", control), control(pluginmanager)
 {
  inputfile_stream = 0;
  ProcessControl(argc, argv);
 }
 
-Converter::~Converter()
+Visualizer::~Visualizer()
 {
  if (inputfile_stream != 0) delete inputfile_stream;
 }

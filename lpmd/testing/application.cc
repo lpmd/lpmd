@@ -8,13 +8,14 @@
 #include "quickmode.h"
 #include <lpmd/simulationbuilder.h>
 #include <lpmd/cellgenerator.h>
+#include <lpmd/cellreader.h>
 #include <lpmd/cellwriter.h>
 #include <lpmd/systemmodifier.h>
 #include <lpmd/systemfilter.h>
 #include <lpmd/visualizer.h>
 #include <lpmd/combinedpotential.h>
 #include <lpmd/properties.h>
-#include <lpmd/paramlist.h>
+#include <lpmd/session.h>
 
 #include <iostream>
 #include <fstream>
@@ -132,6 +133,31 @@ void Application::FillAtoms()
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
  }
+}
+
+
+void Application::FillAtomsFromCellReader()
+{
+ Module & inputmodule = pluginmanager["input1"];
+ if (bool(innercontrol["replacecell"])) inputmodule["replacecell"] = "true";
+ else inputmodule["replacecell"] = "false";
+ try
+ {
+  CellReader & cellreader = CastModule<CellReader>(inputmodule);
+  GlobalSession.DebugStream() << "-> Reading input file: " << inputmodule["file"] << '\n';
+  inputfile_stream = new std::ifstream(inputmodule["file"].c_str());
+  cellreader.ReadHeader(*inputfile_stream);
+  cellreader.ReadCell(*inputfile_stream, *simulation);
+  //
+ }
+ catch (Error & e)
+ {
+  //
+  CellGenerator & generator = CastModule<CellGenerator>(inputmodule);
+  generator.Generate(*simulation);
+ }
+ if (innercontrol.Defined("cellmanager-module"))
+    simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
 }
 
 void Application::AdjustAtomProperties()

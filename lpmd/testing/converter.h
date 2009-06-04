@@ -29,7 +29,6 @@ class Converter: public Application
 
  private:
    ConverterControl control; 
-   std::istream * inputfile_stream;
 };
 
 #endif

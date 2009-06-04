@@ -24,6 +24,7 @@ class Application
    void ShowPluginHelp();
    void ShowHelp();
 
+   void FillAtomsFromCellReader();
    void RunModifiers();
    void RunVisualizers();
    void SaveCurrentConfiguration();
@@ -41,7 +42,7 @@ class Application
    virtual void SetPotentials();
    virtual void Iterate();
 
-   int Run();
+   virtual int Run();
 
  protected:
    const std::string name;
@@ -52,6 +53,7 @@ class Application
    NonOrthogonalCell cell;
    Array<std::ostream *> propertystream; 
    std::ofstream ** outputstream;
+   std::istream * inputfile_stream;
 };
 
 #endif

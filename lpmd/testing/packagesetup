@@ -52,6 +52,14 @@ directory .
        pkgconfig += liblpmd-2.0
        libraries += liblpmdutility.a
     end
+
+    binary lpmd-visualizer
+       language = c++
+       sources = visualizer.cc
+       installpath = bin
+       pkgconfig += liblpmd-2.0
+       libraries += liblpmdutility.a
+    end
 end
 
 directory tests
