@@ -304,6 +304,32 @@
 }
 @end
 
+@test Instruccion filter
+{
+ std::string data = "#\n#\n#\n";
+ data += "filter sphere radius=5.0 center=10.0,10.0,10.0\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["filter-modules"], "sphere "
+ Array<ModuleInfo> & plugins = uc.Plugins();
+ bool plugin_notfound = true;
+ for (int q=0;q<plugins.Size();++q)
+ {
+  if (plugins[q].id == "filter1") 
+  {
+   plugin_notfound = false;
+   @equal plugins[q].name, "sphere"
+   @equal plugins[q].args, "radius 5.0 center 10.0,10.0,10.0"
+  }
+ }
+ @assert !(plugin_notfound)
+}
+@end
+
 @test Instruccion property
 {
  std::string data = "#\n#\n#\n";

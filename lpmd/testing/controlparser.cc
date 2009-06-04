@@ -117,7 +117,7 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
 {
  Map & params = (*this);
  ModuleInfo module_info("", "", ""); //FIXME: mejor constructor!
- if (((name == "input") || (name == "prepare")) || (name == "output"))
+ if (((name == "input") || (name == "prepare")) || ((name == "filter") || (name == "output")))
  {
   impl->modulecounter[name]++;
   std::string tmp = ParseCommandArguments(params, name, "module ");

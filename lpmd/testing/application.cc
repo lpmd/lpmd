@@ -10,6 +10,7 @@
 #include <lpmd/cellgenerator.h>
 #include <lpmd/cellwriter.h>
 #include <lpmd/systemmodifier.h>
+#include <lpmd/systemfilter.h>
 #include <lpmd/visualizer.h>
 #include <lpmd/combinedpotential.h>
 #include <lpmd/properties.h>
@@ -37,6 +38,7 @@ int Application::Run()
  AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
+ ApplyFilters();
  //
  OpenOutputStreams();
  Iterate();
@@ -165,6 +167,17 @@ void Application::ApplyPrepares()
   std::string id = "prepare"+ToString(p+1);
   SystemModifier & sm = CastModule<SystemModifier>(pluginmanager[id]);
   sm.Apply(*simulation);
+ } 
+}
+
+void Application::ApplyFilters()
+{
+ Array<std::string> filters = StringSplit(innercontrol["filter-modules"]);
+ for (int p=0;p<filters.Size();++p)
+ {
+  std::string id = "filter"+ToString(p+1);
+  SystemFilter & sfilt = CastModule<SystemFilter>(pluginmanager[id]);
+  sfilt.Apply(*simulation);
  } 
 }
 

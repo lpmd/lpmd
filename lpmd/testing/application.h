@@ -37,6 +37,7 @@ class Application
    virtual void OpenOutputStreams();
    virtual void CloseOutputStreams();
    virtual void ApplyPrepares();
+   virtual void ApplyFilters();
    virtual void SetPotentials();
    virtual void Iterate();
 

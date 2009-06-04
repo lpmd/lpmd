@@ -59,6 +59,7 @@ void Converter::Iterate()
  while (reading)
  {
   ApplyPrepares();
+  ApplyFilters();
   RunModifiers();
   RunVisualizers();
   SaveCurrentConfiguration();
