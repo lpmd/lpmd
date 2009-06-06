@@ -10,14 +10,6 @@
 #include "application.h"
 #include <iostream>
 
-class ConverterControl: public UtilityControl
-{
- public:
-   ConverterControl(PluginManager & pm): UtilityControl(pm) { }
-
-
-};
-
 class Converter: public Application
 {
  public:
@@ -27,7 +19,7 @@ class Converter: public Application
    void Iterate();
 
  private:
-   ConverterControl control; 
+   UtilityControl control; 
 };
 
 #endif

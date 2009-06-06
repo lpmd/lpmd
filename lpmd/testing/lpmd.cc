@@ -61,6 +61,7 @@ void LPMD::Iterate()
   RunModifiers();
   ComputeProperties();
   RunVisualizers();
+  SaveCurrentConfiguration();
  }
 
  timer.Stop();

@@ -23,6 +23,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <limits>
 
 Application::Application(const std::string & appname, const std::string & cmd, UtilityControl & uc): name(appname), cmdname(cmd), innercontrol(uc)
 {
@@ -153,7 +154,7 @@ void Application::FillAtomsFromCellReader()
  Module & inputmodule = pluginmanager["input1"];
  if (bool(innercontrol["replacecell"])) inputmodule["replacecell"] = "true";
  else inputmodule["replacecell"] = "false";
- try
+ if (pluginmanager.HasType<CellReader>("input1"))
  {
   CellReader & cellreader = CastModule<CellReader>(inputmodule);
   GlobalSession.DebugStream() << "-> Reading input file: " << inputmodule["file"] << '\n';
@@ -161,7 +162,7 @@ void Application::FillAtomsFromCellReader()
   cellreader.ReadHeader(*inputfile_stream);
   cellreader.ReadCell(*inputfile_stream, *simulation);
  }
- catch (Error & e)
+ else
  {
   CellGenerator & generator = CastModule<CellGenerator>(inputmodule);
   generator.Generate(*simulation);
@@ -326,7 +327,7 @@ void Application::ClosePropertyStreams()
  {
   lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
   lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
-  value.OutputAverageTo(*(propertystream[p]));
+  if (bool(pluginmanager[properties[p]]["average"])) value.OutputAverageTo(*(propertystream[p]));
   delete propertystream[p];
  }
 }
@@ -338,6 +339,10 @@ void Application::OpenOutputStreams()
  for (int p=0;p<outstreams.Size();++p)
  {
   const std::string & plugin_id = "output"+ToString(p+1);
+  Module & modl = pluginmanager[plugin_id];
+  if (!modl.Defined("start")) modl["start"] = "0";
+  if (!modl.Defined("end")) modl["end"] = ToString(std::numeric_limits<long int>::max());
+  modl.Show(std::cerr);
   const std::string filename = pluginmanager[plugin_id]["file"];
   outputstream[p] = new std::ofstream(filename.c_str());
   CellWriter & cellwriter = CastModule<CellWriter>(pluginmanager[plugin_id]);
