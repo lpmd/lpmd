@@ -15,6 +15,9 @@
 #include <lpmd/visualizer.h>
 #include <lpmd/combinedpotential.h>
 #include <lpmd/properties.h>
+#include <lpmd/property.h>
+#include <lpmd/storedvalue.h>
+#include <lpmd/value.h>
 #include <lpmd/session.h>
 
 #include <iostream>
@@ -46,9 +49,11 @@ int Application::Run()
  ApplyPrepares();
  ApplyFilters();
  //
+ OpenPropertyStreams();
  OpenOutputStreams();
  Iterate();
  CloseOutputStreams();
+ ClosePropertyStreams();
  //
  return 0;
 }
@@ -58,6 +63,7 @@ void Application::ProcessControl(int argc, const char * argv[])
  QuickModeParser quick;
  quick.Parse(argc, argv);
  if (quick.Defined("help")) ShowHelp();
+ else if (quick.Defined("test-plugin")) AutoTestPlugin(quick["test-plugin-name"]);
  else
  {
   ParamList options;
@@ -75,7 +81,6 @@ void Application::ProcessControl(int argc, const char * argv[])
   GlobalSession.AssignParameter("debug", "stderr");
   innercontrol["verbose"] = "true";
  }
- GlobalSession.DebugStream() << pluginmanager << '\n';
 }
 
 void Application::CheckConsistency()
@@ -88,17 +93,13 @@ void Application::ConstructCell()
  std::string celltype = innercontrol["cell-type"];
  if (celltype == "automatic")
  {
-  cell[0] = e1;
-  cell[1] = e2;
-  cell[2] = e3;
+  for (int q=0;q<3;++q) cell[q] = identity[q];
  }
  else if (celltype == "cubic")
  {
   double length = double(innercontrol["cell-a"]);
   double scale = double(innercontrol["cell-scale"]);
-  cell[0] = length*scale*e1;
-  cell[1] = length*scale*e2;
-  cell[2] = length*scale*e3;
+  for (int q=0;q<3;++q) cell[q] = length*scale*identity[q];
  }
  else if (celltype == "crystal")
  {
@@ -131,15 +132,16 @@ void Application::ConstructCell()
 
 void Application::ConstructSimulation()
 {
+ NonOrthogonalCell temporary_cell(cell[0], cell[1], cell[2]);
  simulation = &(SimulationBuilder::CreateGeneric());
- #warning "SimulationBuilder::CreateGeneric, buscar metodo para crear una Simulation especializada"
- for (int q=0;q<3;++q) simulation->Cell()[q] = cell[q];
+ for (int q=0;q<3;++q) simulation->Cell()[q] = temporary_cell[q];
 }
 
 void Application::FillAtoms()
 {
  CellGenerator & cg = CastModule<CellGenerator>(pluginmanager["input1"]);
  cg.Generate(*simulation);
+ OptimizeSimulationAtStart();
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
@@ -164,8 +166,15 @@ void Application::FillAtomsFromCellReader()
   CellGenerator & generator = CastModule<CellGenerator>(inputmodule);
   generator.Generate(*simulation);
  }
+ OptimizeSimulationAtStart();
  if (innercontrol.Defined("cellmanager-module"))
     simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
+}
+
+void Application::OptimizeSimulationAtStart()
+{
+ GlobalSession.DebugStream() << "-> Optimizing simulation before starting...\n";
+ simulation = &(SimulationBuilder::CloneOptimized(*simulation));
 }
 
 void Application::AdjustAtomProperties()
@@ -263,6 +272,64 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
 void Application::RunModifiers() { ApplySteppers<SystemModifier>(pluginmanager, innercontrol, *simulation, "apply"); }
 
 void Application::RunVisualizers() { ApplySteppers<Visualizer>(pluginmanager, innercontrol, *simulation, "visualize"); }
+
+void Application::ComputeProperties()
+{
+ long currentstep = simulation->CurrentStep();
+ Array<std::string> properties = StringSplit(innercontrol["property-modules"]); 
+ for (int p=0;p<properties.Size();++p)
+ {
+  Module & rawmodule = pluginmanager[properties[p]];
+  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(rawmodule);
+  if (prop.IsActiveInStep(currentstep)) 
+  {
+   if ((rawmodule.Defined("filterby")) && (rawmodule["filterby"] != "none")) 
+   { 
+    GlobalSession.DebugStream() << "-> Applying implicit filter on " << properties[p] << '\n';
+    GlobalSession.DebugStream() << "-> Filtered plugin details:\n";
+    rawmodule.Show(GlobalSession.DebugStream());
+    Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
+    GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
+    filtering_plugin.Show(GlobalSession.DebugStream());
+    Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
+    simulation->ApplyAtomMask(selector); 
+    prop.Evaluate(*simulation, simulation->Potentials());
+    simulation->RemoveAtomMask();
+   }
+   else prop.Evaluate(*simulation, simulation->Potentials());
+   lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
+   if (bool(pluginmanager[properties[p]]["average"])) value.AddToAverage();
+   else value.OutputTo(*(propertystream[p]));
+  }
+ }
+}
+
+void Application::OpenPropertyStreams()
+{
+ propertystream.Clear();
+ Array<std::string> properties = StringSplit(innercontrol["property-modules"]); 
+ for (int p=0;p<properties.Size();++p)
+ {
+  const Parameter & pluginname = properties[p];
+  const std::string filename = pluginmanager[pluginname]["output"];
+  propertystream.Append(new std::ofstream(filename.c_str()));
+  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
+  lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
+  value.ClearAverage();
+ }
+}
+
+void Application::ClosePropertyStreams()
+{
+ Array<std::string> properties = StringSplit(innercontrol["property-modules"]); 
+ for (int p=0;p<properties.Size();++p)
+ {
+  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
+  lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
+  value.OutputAverageTo(*(propertystream[p]));
+  delete propertystream[p];
+ }
+}
 
 void Application::OpenOutputStreams()
 {

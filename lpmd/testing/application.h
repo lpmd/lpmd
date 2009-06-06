@@ -23,6 +23,7 @@ class Application
    void PrintBanner(const std::string & text);
    void ShowPluginHelp();
    void ShowHelp();
+   void AutoTestPlugin(const std::string & pluginname);
 
    void FillAtomsFromCellReader();
    void RunModifiers();
@@ -34,9 +35,13 @@ class Application
    virtual void ConstructCell();
    virtual void ConstructSimulation();
    virtual void FillAtoms();
+   virtual void OptimizeSimulationAtStart();
    virtual void AdjustAtomProperties();
+   virtual void ComputeProperties();
    virtual void OpenOutputStreams();
    virtual void CloseOutputStreams();
+   virtual void OpenPropertyStreams();
+   virtual void ClosePropertyStreams();
    virtual void ApplyPrepares();
    virtual void ApplyFilters();
    virtual void SetPotentials();

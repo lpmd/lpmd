@@ -30,6 +30,7 @@ QuickModeParser::QuickModeParser()
  DefineOption("output", "o", "options");
  DefineOption("use", "u", "options");
  DefineOption("cellmanager", "c", "options");
+ DefineOption("test-plugin", "T", "name");
 }
 
 QuickModeParser::~QuickModeParser()

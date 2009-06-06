@@ -22,17 +22,17 @@ use euler
     dt 1.0
 enduse
 
-use linkedcell
-    cutoff 8.0
-    nx 7
-    ny 7
-    nz 7
-enduse
-
-#use minimumimage
+#use linkedcell
 #    cutoff 8.0
-#    debug none
+#    nx 7
+#    ny 7
+#    nz 7
 #enduse
+
+use minimumimage
+    cutoff 8.0
+    debug none
+enduse
 
 use printatoms
     from 0
@@ -42,7 +42,8 @@ enduse
 use cna
     rcut 4.6
     output cna.dat
-    mode statistics
+    mode defects
+    reference fcc
     average false
 enduse
 
@@ -57,13 +58,13 @@ use veldist
     average true
 enduse
 
-cellmanager linkedcell
-#cellmanager minimumimage
+#cellmanager linkedcell
+cellmanager minimumimage
 
 potential lennardjones Ar Ar
 #integrator leapfrog start=0
 integrator euler start=0
 
-#property cna start=0 end=5000 each=500
+#property cna start=0 end=5000 each=500 over sphere radius=5.0 center=<8.56,8.56,8.56>
 #property veldist start=0 end=5000 each=250
 

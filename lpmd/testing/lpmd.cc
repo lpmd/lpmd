@@ -68,49 +68,6 @@ void LPMD::Iterate()
  timer.ShowElapsedTimes();
 }
 
-void LPMD::OpenPropertyStreams()
-{
- Array<std::string> properties = StringSplit(control["property-modules"]); 
- for (int p=0;p<properties.Size();++p)
- {
-  const Parameter & pluginname = properties[p];
-  const std::string filename = pluginmanager[pluginname]["output"];
-  propertystream.Append(new std::ofstream(filename.c_str()));
-  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
-  lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
-  value.ClearAverage();
- }
-}
-
-void LPMD::ClosePropertyStreams()
-{
- Array<std::string> properties = StringSplit(control["property-modules"]); 
- for (int p=0;p<properties.Size();++p)
- {
-  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
-  lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
-  value.OutputAverageTo(*(propertystream[p]));
-  delete propertystream[p];
- }
-}
-
-void LPMD::ComputeProperties()
-{
- long currentstep = simulation->CurrentStep();
- Array<std::string> properties = StringSplit(control["property-modules"]); 
- for (int p=0;p<properties.Size();++p)
- {
-  lpmd::InstantProperty & prop = dynamic_cast<lpmd::InstantProperty &>(pluginmanager[properties[p]]);
-  if (prop.IsActiveInStep(currentstep)) 
-  {
-   prop.Evaluate(*simulation, simulation->Potentials());
-   lpmd::AbstractValue & value = dynamic_cast<lpmd::AbstractValue &>(prop);
-   if (bool(pluginmanager[properties[p]]["average"])) value.AddToAverage();
-   else value.OutputTo(*(propertystream[p]));
-  }
- }
-}
-
 LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", "lpmd", control), control(pluginmanager)
 {
  PrintPalmTree();

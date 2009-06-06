@@ -29,12 +29,8 @@ class LPMD: public Application
  public:
    LPMD(int argc, const char * argv[]);
 
-   void OpenPropertyStreams();
-   void ClosePropertyStreams();
-
    void FillAtoms();
    void Iterate();
-   void ComputeProperties();
 
  private:
    LPMDControl control;
