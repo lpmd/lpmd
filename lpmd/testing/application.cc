@@ -23,7 +23,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include <limits>
 
 Application::Application(const std::string & appname, const std::string & cmd, UtilityControl & uc): name(appname), cmdname(cmd), innercontrol(uc)
 {
@@ -341,7 +340,7 @@ void Application::OpenOutputStreams()
   const std::string & plugin_id = "output"+ToString(p+1);
   Module & modl = pluginmanager[plugin_id];
   if (!modl.Defined("start")) modl["start"] = "0";
-  if (!modl.Defined("end")) modl["end"] = ToString(std::numeric_limits<long int>::max());
+  if (!modl.Defined("end")) modl["end"] = "-1";
   modl.Show(std::cerr);
   const std::string filename = pluginmanager[plugin_id]["file"];
   outputstream[p] = new std::ofstream(filename.c_str());
