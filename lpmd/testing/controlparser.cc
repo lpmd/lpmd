@@ -19,6 +19,7 @@ class UControlImpl
    ParamList potentials;
    ParamList bonds;
    std::map<std::string, int> modulecounter;
+   int implfilter_count;
 };
 
 UtilityControl::UtilityControl(PluginManager & pm)
@@ -28,6 +29,7 @@ UtilityControl::UtilityControl(PluginManager & pm)
  impl->modulecounter["input"] = 0;
  impl->modulecounter["output"] = 0;
  impl->modulecounter["prepare"] = 0;
+ impl->implfilter_count = 0;
  DeclareStatement("plugindir", "dir");
  DeclareStatement("cell cubic", "a scale");
  DeclareStatement("cell crystal", "a b c alpha beta gamma scale");
@@ -135,22 +137,58 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
   params.Remove(name+"-module");
   return 0;
  }
- else if (((name == "property") || (name == "apply")) || (name == "visualize"))
+ else if (name == "implicitfilter")
  {
-  std::string tmp = ParseCommandArguments(params, name, "module ");
+  std::string tmp = ParseCommandArguments(params, name, "id module ");
   std::string validkeywords = (impl->pluginmanager)->GetPluginKeywords(params[name+"-module"]);
   std::string args = ParseCommandArguments(params, name, validkeywords);
-  for (int q=0;q<impl->plugins.Size();++q)
-  {
-   if (impl->plugins[q].id == params[name+"-module"]) 
-   {
-    impl->plugins[q].args += (" "+args);
-    (impl->pluginmanager)->UpdatePlugin(params[name+"-module"], impl->plugins[q].args); 
-   }
-  }
+ 
+  module_info.name = params[name+"-module"];
+  module_info.id = params[name+"-id"];
+  module_info.args = args;
+
+  // Load the plugin
+  (impl->pluginmanager)->LoadPlugin(module_info);
+  //
+  impl->plugins.Append(module_info);
+
   params[name+"-modules"] += (params[name+"-module"]+" ");
   params.Remove(name+"-module");
   return 0;
+ }
+ else if (((name == "property") || (name == "apply")) || (name == "visualize"))
+ {
+  Array<std::string> st_words = StringSplit(full_statement);
+  int over_pos = st_words.Find("over");
+  if (over_pos > 0)
+  {
+   std::string main_statement = "";
+   for (int i=0;i<over_pos;++i) main_statement += (st_words[i]+" ");
+   main_statement += ("filterby=implicitfilter"+ToString(impl->implfilter_count));
+   std::string impl_filter = ("implicitfilter id=implicitfilter"+ToString(impl->implfilter_count)+" module=");
+   for (int i=over_pos+1;i<st_words.Size();++i) impl_filter += (st_words[i]+" ");
+   impl->implfilter_count++;
+   ReadLine(impl_filter);
+   ReadLine(main_statement);
+   return 0;
+  }
+  else
+  {
+   std::string tmp = ParseCommandArguments(params, name, "module ");
+   std::string validkeywords = (impl->pluginmanager)->GetPluginKeywords(params[name+"-module"]);
+   std::string args = ParseCommandArguments(params, name, validkeywords);
+   for (int q=0;q<impl->plugins.Size();++q)
+   {
+    if (impl->plugins[q].id == params[name+"-module"]) 
+    {
+     impl->plugins[q].args += (" "+args);
+     (impl->pluginmanager)->UpdatePlugin(params[name+"-module"], impl->plugins[q].args); 
+    }
+   }
+   params[name+"-modules"] += (params[name+"-module"]+" ");
+   params.Remove(name+"-module");
+   return 0;
+  }
  }
  return 1;
 }

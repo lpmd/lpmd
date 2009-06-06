@@ -25,6 +25,7 @@ Application::Application(const std::string & appname, const std::string & cmd, U
 {
  simulation = 0;
  inputfile_stream = 0;
+ GlobalSession.AssignParameter("debug", "none");
  srand48(long(time(NULL)));
 }
 
@@ -69,12 +70,17 @@ void Application::ProcessControl(int argc, const char * argv[])
   }
   else innercontrol.Read(quick.Arguments()[1], options);
  }
- if (quick.Defined("verbose")) innercontrol["verbose"] = "true";
+ if (quick.Defined("verbose")) 
+ {
+  GlobalSession.AssignParameter("debug", "stderr");
+  innercontrol["verbose"] = "true";
+ }
+ GlobalSession.DebugStream() << pluginmanager << '\n';
 }
 
 void Application::CheckConsistency()
 {
- std::cerr << '\n' << innercontrol << '\n';
+ GlobalSession.DebugStream() << '\n' << innercontrol << '\n';
 }
 
 void Application::ConstructCell()
@@ -152,11 +158,9 @@ void Application::FillAtomsFromCellReader()
   inputfile_stream = new std::ifstream(inputmodule["file"].c_str());
   cellreader.ReadHeader(*inputfile_stream);
   cellreader.ReadCell(*inputfile_stream, *simulation);
-  //
  }
  catch (Error & e)
  {
-  //
   CellGenerator & generator = CastModule<CellGenerator>(inputmodule);
   generator.Generate(*simulation);
  }
@@ -208,7 +212,7 @@ void Application::ApplyFilters()
   std::string id = "filter"+ToString(p+1);
   SystemFilter & sfilt = CastModule<SystemFilter>(pluginmanager[id]);
   sfilt.Apply(*simulation);
- } 
+ }
 }
 
 void Application::SetPotentials()
@@ -234,8 +238,25 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
  Array<std::string> modules = StringSplit(control[kind+"-modules"]);
  for (int p=0;p<modules.Size();++p)
  {
-  T & mod = CastModule<T>(pluginmanager[modules[p]]);
-  if (mod.IsActiveInStep(currentstep)) mod.Apply(simulation);
+  Module & rawmodule = pluginmanager[modules[p]];
+  T & mod = CastModule<T>(rawmodule);
+  if (mod.IsActiveInStep(currentstep)) 
+  {
+   if ((rawmodule.Defined("filterby")) && (rawmodule["filterby"] != "none")) 
+   { 
+    GlobalSession.DebugStream() << "-> Applying implicit filter on " << modules[p] << '\n';
+    GlobalSession.DebugStream() << "-> Filtered plugin details:\n";
+    rawmodule.Show(GlobalSession.DebugStream());
+    Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
+    GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
+    filtering_plugin.Show(GlobalSession.DebugStream());
+    Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
+    simulation.ApplyAtomMask(selector); 
+    mod.Apply(simulation);
+    simulation.RemoveAtomMask();
+   }
+   else mod.Apply(simulation);
+  }
  }
 }
 
