@@ -3,11 +3,11 @@ set replacecell true
 
 input zlp ZrO2-100conf.zlp debug=none
 
-use printatoms
-    from 42
-    to 42
+set delay 0.2
+
+use lpvisual
+    quality 2
 enduse
 
-monitor step start=0 end=100 each=1
-visualize printatoms start=0 end=100 each=10
+visualize lpvisual start=0 each=1
 

@@ -30,7 +30,7 @@ class Application
    void RunVisualizers();
    void SaveCurrentConfiguration();
 
-   virtual void ProcessControl(int argc, const char * argv[]);
+   virtual void ProcessControl(int argc, const char * argv[], const std::string & use_hint);
    virtual void CheckConsistency();
    virtual void ConstructCell();
    virtual void ConstructSimulation();

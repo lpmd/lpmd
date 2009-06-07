@@ -10,5 +10,4 @@ enduse
 apply temperature start=0 end=100 each=20
 
 output lpmd file=test2.lpmd 
-#start=0 end=100 each=20
 

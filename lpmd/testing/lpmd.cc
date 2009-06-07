@@ -72,6 +72,6 @@ void LPMD::Iterate()
 LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", "lpmd", control), control(pluginmanager)
 {
  PrintPalmTree();
- ProcessControl(argc, argv);
+ ProcessControl(argc, argv, "visualize");
 }
 

@@ -10,13 +10,13 @@
 class QuickModeImpl
 {
  public:
-
-
-
+  std::string autouse_statement;
 };
 
-QuickModeParser::QuickModeParser()
+QuickModeParser::QuickModeParser(const std::string & use_hint)
 {
+ impl = new QuickModeImpl();
+ impl->autouse_statement = use_hint;
  DefineOption("help", "h", "");
  DefineOption("verbose", "v", "");
  DefineOption("pluginhelp", "p", "name");
@@ -33,10 +33,7 @@ QuickModeParser::QuickModeParser()
  DefineOption("test-plugin", "T", "name");
 }
 
-QuickModeParser::~QuickModeParser()
-{
-
-}
+QuickModeParser::~QuickModeParser() { delete impl; }
 
 Array<std::string> ParseModuleFlags(const std::string & optflags)
 {
@@ -55,7 +52,7 @@ std::string ParseModuleLoading(const std::string & optflags)
  return ("module="+modname+" "+joinedflags+"\n");
 }
 
-std::string ParseUseOptions(const std::string optflags)
+std::string ParseUseOptions(const std::string optflags, const std::string use_hint)
 {
  std::string control = "";
  Array<std::string> opt = StringSplit(optflags, ':');
@@ -67,7 +64,7 @@ std::string ParseUseOptions(const std::string optflags)
   Array<std::string> pair = StringSplit(flags[q], '=');
   control += (pair[0]+" "+pair[1]+"\n");
  }
- control += "enduse\n";
+ control += ("enduse\n"+use_hint+" "+modname+"\n");
  return control;
 }
 
@@ -119,13 +116,13 @@ std::string QuickModeParser::FormattedAsControlFile() const
  if (cellstatement != "") control += (cellstatement+" scale="+cell_scale+"\n");
  if (Defined("input-options")) control += ("input "+ParseModuleLoading((*this)["input-options"]));
  if (Defined("output-options")) control += ("output "+ParseModuleLoading((*this)["output-options"]));
- if (Defined("use-options")) control += ParseUseOptions((*this)["use-options"]);
+ if (Defined("use-options")) control += ParseUseOptions((*this)["use-options"], impl->autouse_statement);
  if (Defined("cellmanager-options"))
  {
   std::string optflags = (*this)["cellmanager-options"];
   Array<std::string> opt = StringSplit(optflags, ':');
   std::string modname = opt[0];
-  control += (ParseUseOptions((*this)["cellmanager-options"])+"cellmanager "+modname+"\n");
+  control += (ParseUseOptions((*this)["cellmanager-options"], "cellmanager"));
  }
  return control;
 }

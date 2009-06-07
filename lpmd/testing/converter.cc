@@ -31,10 +31,14 @@ void Converter::FillAtoms() { FillAtomsFromCellReader(); }
 
 void Converter::Iterate()
 {
- bool reading = true;
- ReplayIntegrator replay;
- simulation->SetIntegrator(replay);
- while (reading)
+ ReplayIntegrator * replay = 0;
+ Plugin & inputplugin = pluginmanager["input1"];
+ if (inputfile_stream != 0)
+ {
+  replay = new ReplayIntegrator(inputplugin, *inputfile_stream);
+  simulation->SetIntegrator(*replay);
+ }
+ while (true)
  {
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   ApplyPrepares();
@@ -43,17 +47,14 @@ void Converter::Iterate()
   RunVisualizers();
   SaveCurrentConfiguration();
   if (inputfile_stream == 0) break;
-  // 
-  Module & inputmodule = pluginmanager["input1"];
-  CellReader & cellreader = CastModule<CellReader>(inputmodule);
-  simulation->DoStep();
-  simulation->Atoms().Clear();
-  reading = cellreader.ReadCell(*inputfile_stream, *simulation);
+  try { simulation->DoStep(); }
+  catch (RuntimeError & rt) { break; }
  }
+ delete replay;
 }
 
 Converter::Converter(int argc, const char * argv[]): Application("LPMD Converter", "lpmd-converter", control), control(pluginmanager)
 {
- ProcessControl(argc, argv);
+ ProcessControl(argc, argv, "apply");
 }
 

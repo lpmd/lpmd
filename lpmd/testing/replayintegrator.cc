@@ -5,18 +5,37 @@
  */
 
 #include "replayintegrator.h"
+#include <exception>
+
 #include <lpmd/simulation.h>
 #include <lpmd/potential.h>
+#include <lpmd/session.h>
 
 using namespace lpmd;
 
-//
-// Por ahora ReplayIntegrator esta vacio
-// La idea es que se encargue de tratar la carga de archivos 
-// en memoria como si fuera un Integrator (incluso retroceder en configuraciones?)
-//
+ReplayIntegrator::ReplayIntegrator(Plugin & inpplugin, std::istream & inpstream): inputstream(inpstream)
+{
+ try { cellreader = dynamic_cast<CellReader *>(&inpplugin); }
+ catch (std::exception & e) { cellreader = 0; }
+}
 
-ReplayIntegrator::ReplayIntegrator() { }
+void ReplayIntegrator::Advance(Simulation & sim, Potential & pot) 
+{ 
+ if (cellreader != 0)
+ {
+  sim.Atoms().Clear();
+  bool status = cellreader->ReadCell(inputstream, sim);
+  if (! status) throw RuntimeError("No more configurations to read");
+ }
+}
 
-void ReplayIntegrator::Advance(Simulation & sim, Potential & pot) { }
+void ReplayIntegrator::PreRead(Simulation & simulation)
+{
+ assert(cellreader != 0);
+ history.Append(simulation);
+ cellreader->ReadMany(inputstream, history, true);
+ GlobalSession.DebugStream() << "-> Read " << history.Size() << " configurations.\n";
+}
+
+SimulationHistory & ReplayIntegrator::History() { return history; }
 

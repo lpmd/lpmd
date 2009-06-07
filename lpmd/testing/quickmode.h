@@ -14,7 +14,7 @@ using namespace lpmd;
 class QuickModeParser: public CommandArguments
 {
  public:
-   QuickModeParser();
+   QuickModeParser(const std::string & use_hint);
    ~QuickModeParser();
    std::string FormattedAsControlFile() const;
 

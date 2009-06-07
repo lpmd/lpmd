@@ -9,6 +9,7 @@
 #include "replayintegrator.h"
 
 #include <fstream>
+#include <unistd.h>
 #include <lpmd/cellformat.h>
 #include <lpmd/session.h>
 #include <lpmd/error.h>
@@ -48,27 +49,29 @@ int Visualizer::Run()
 
 void Visualizer::Iterate()
 {
- bool reading = true;
- ReplayIntegrator replay;
- simulation->SetIntegrator(replay);
- while (reading)
+ Plugin & inputplugin = pluginmanager["input1"];
+ ReplayIntegrator * replay = 0;
+ if (inputfile_stream != 0)
+ {
+  replay = new ReplayIntegrator(inputplugin, *inputfile_stream);
+  simulation->SetIntegrator(*replay);
+ }
+ while (true)
  {
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   ApplyPrepares();
   ApplyFilters();
+  if (control.Defined("delay")) usleep(long(double(control["delay"])*1000000.0));
   RunVisualizers();
   if (inputfile_stream == 0) break;
-  // 
-  Module & inputmodule = pluginmanager["input1"];
-  CellReader & cellreader = CastModule<CellReader>(inputmodule);
-  simulation->DoStep();
-  simulation->Atoms().Clear();
-  reading = cellreader.ReadCell(*inputfile_stream, *simulation);
+  try { simulation->DoStep(); }
+  catch (RuntimeError & rt) { break; }
  }
+ delete replay;
 }
 
 Visualizer::Visualizer(int argc, const char * argv[]): Application("LPMD Visualizer", "lpmd-visualizer", control), control(pluginmanager)
 {
- ProcessControl(argc, argv);
+ ProcessControl(argc, argv, "visualize");
 }
 
