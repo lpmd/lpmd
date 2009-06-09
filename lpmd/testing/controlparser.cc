@@ -54,6 +54,7 @@ UtilityControl::UtilityControl(PluginManager & pm)
  params["periodic-z"] = "true";
  params["cell-scale"] = "1.0";
  params["replacecell"] = "false";
+ params["optimize-simulation"] = "true";
 }
 
 UtilityControl::~UtilityControl() { delete impl; }
@@ -183,6 +184,13 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
     {
      impl->plugins[q].args += (" "+args);
      (impl->pluginmanager)->UpdatePlugin(params[name+"-module"], impl->plugins[q].args); 
+     Plugin & plugin = (*(impl->pluginmanager))[impl->plugins[q].id];
+     if (int(plugin["each"]) == 0)
+     {
+      plugin["start"] = "0";
+      plugin["end"] = "-1";
+      plugin["each"] = "1";
+     }
     }
    }
    params[name+"-modules"] += (params[name+"-module"]+" ");

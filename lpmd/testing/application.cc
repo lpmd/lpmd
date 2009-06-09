@@ -64,6 +64,7 @@ void Application::ProcessControl(int argc, const char * argv[], const std::strin
 {
  QuickModeParser quick(use_hint);
  quick.Parse(argc, argv);
+ innercontrol["optimize-simulation"] = "true";
  if (quick.Defined("help")) ShowHelp();
  else if (quick.Defined("test-plugin")) AutoTestPlugin(quick["test-plugin-name"]);
  else
@@ -143,7 +144,8 @@ void Application::FillAtoms()
 {
  CellGenerator & cg = CastModule<CellGenerator>(pluginmanager["input1"]);
  cg.Generate(*simulation);
- OptimizeSimulationAtStart();
+ if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
+ else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
@@ -168,7 +170,8 @@ void Application::FillAtomsFromCellReader()
   CellGenerator & generator = CastModule<CellGenerator>(inputmodule);
   generator.Generate(*simulation);
  }
- OptimizeSimulationAtStart();
+ if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
+ else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
  if (innercontrol.Defined("cellmanager-module"))
     simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
 }
