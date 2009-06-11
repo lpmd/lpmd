@@ -1,0 +1,55 @@
+cell cubic 17.8
+
+input module=crystal3d type=fcc symbol=Ar nx=3 ny=3 nz=3
+
+steps 10000
+
+set optimize-simulation false
+
+#prepare replicate nx=2 ny=2 nz=2
+prepare temperature t=1.0
+
+use cellscaling as cs
+ percent 0.5
+enduse
+
+use lennardjones
+    debug none
+    sigma 3.41
+    epsilon 0.0103408
+    cutoff 8.5
+    bins 1000
+enduse
+
+use velocityverlet as integ
+    dt 5.0
+enduse
+
+#use euler as integ
+#    dt 1.0
+#enduse
+
+use linkedcell
+    cutoff 8.0
+    nx 7
+    ny 7
+    nz 7
+enduse
+
+use lpvisual
+    radius 0.5
+    width 1500
+    height 800
+    quality 2
+    azimuth 0
+    zenith 0
+enduse
+
+cellmanager linkedcell
+
+potential lennardjones Ar Ar
+integrator integ
+
+apply cs start=0 end=10000 each=500
+visualize lpvisual start=0 end=10000 each=1
+

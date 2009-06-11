@@ -214,7 +214,9 @@ void Application::ApplyPrepares()
  {
   std::string id = "prepare"+ToString(p+1);
   SystemModifier & sm = CastModule<SystemModifier>(pluginmanager[id]);
+  Cell original_cell(simulation->Cell());
   sm.Apply(*simulation);
+  if (simulation->Cell() != original_cell) simulation->RescalePositions(original_cell);
  } 
 }
 
@@ -225,7 +227,9 @@ void Application::ApplyFilters()
  {
   std::string id = "filter"+ToString(p+1);
   SystemFilter & sfilt = CastModule<SystemFilter>(pluginmanager[id]);
+  Cell original_cell(simulation->Cell());
   sfilt.Apply(*simulation);
+  if (simulation->Cell() != original_cell) simulation->RescalePositions(original_cell);
  }
 }
 
@@ -266,10 +270,17 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
     filtering_plugin.Show(GlobalSession.DebugStream());
     Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
     simulation.ApplyAtomMask(selector); 
+    Cell original_cell(simulation.Cell());
     mod.Apply(simulation);
+    if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
     simulation.RemoveAtomMask();
    }
-   else mod.Apply(simulation);
+   else
+   {
+    Cell original_cell(simulation.Cell());
+    mod.Apply(simulation);
+    if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
+   }
   }
  }
 }
