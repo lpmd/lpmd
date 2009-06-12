@@ -251,6 +251,9 @@ void Application::ApplyFilters()
   SystemFilter & sfilt = CastModule<SystemFilter>(pluginmanager[id]);
   if (name == "LPMD") pluginmanager[id].Show(std::cout);
   Cell original_cell(simulation->Cell());
+  bool inverse = false;
+  if (pluginmanager[id].Defined("inverse") && (bool(pluginmanager[id]["inverse"]))) inverse = true;
+  sfilt.inverted = inverse;
   sfilt.Apply(*simulation);
   if (simulation->Cell() != original_cell) simulation->RescalePositions(original_cell);
  }
@@ -305,7 +308,9 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
     GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
     filtering_plugin.Show(GlobalSession.DebugStream());
     Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
-    simulation.ApplyAtomMask(selector); 
+    bool inverse = false;
+    if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse = true;
+    simulation.ApplyAtomMask(selector, inverse); 
     Cell original_cell(simulation.Cell());
     if ((mod.end == -1) && control.Defined("steps-number")) mod.end = int(control["steps-number"]);
     mod.Apply(simulation);
@@ -349,7 +354,9 @@ void Application::ComputeProperties()
     GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
     filtering_plugin.Show(GlobalSession.DebugStream());
     Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
-    simulation->ApplyAtomMask(selector); 
+    bool inverse = false;
+    if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse = true;
+    simulation->ApplyAtomMask(selector, inverse);
     prop.Evaluate(*simulation, simulation->Potentials());
     simulation->RemoveAtomMask();
    }

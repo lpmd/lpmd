@@ -3,11 +3,18 @@ set replacecell true
 
 input zlp ZrO2-100conf.zlp debug=none
 
-use temperature
-    t 300.0
+use setcolor as color_green
+    color <0.0,1.0,0.0>
+    debug none
 enduse
 
-apply temperature start=0 end=100 each=20
+use setcolor as color_red
+    color <1.0,0.0,0.0>
+    debug none
+enduse
 
-output lpmd file=test2.lpmd 
+apply color_red over element symbol=O
+apply color_green over element symbol=Zr
+
+output lpmd file=test2.lpmd extra=RGB
 
