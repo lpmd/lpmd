@@ -50,6 +50,10 @@ int Application::Run()
  SetPotentials();
  ApplyPrepares();
  ApplyFilters();
+ if (innercontrol.Defined("cellmanager-module"))
+ {
+  simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
+ }
  //
  OpenPropertyStreams();
  OpenOutputStreams();
@@ -158,10 +162,6 @@ void Application::FillAtoms()
  cg.Generate(*simulation);
  if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
  else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
- if (innercontrol.Defined("cellmanager-module"))
- {
-  simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
- }
 }
 
 void Application::FillAtomsFromCellReader()
@@ -184,8 +184,6 @@ void Application::FillAtomsFromCellReader()
  }
  if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
  else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
- if (innercontrol.Defined("cellmanager-module"))
-    simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
 }
 
 void Application::OptimizeSimulationAtStart()
@@ -239,6 +237,8 @@ void Application::ApplyPrepares()
   sm.Apply(*simulation);
   if (simulation->Cell() != original_cell) simulation->RescalePositions(original_cell);
  } 
+ if (innercontrol.Defined("cellmanager-module")) 
+    CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]).UpdateCell(*simulation);
 }
 
 void Application::ApplyFilters()

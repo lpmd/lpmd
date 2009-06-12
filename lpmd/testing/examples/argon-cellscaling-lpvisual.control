@@ -2,12 +2,14 @@ cell cubic 17.8
 
 input module=crystal3d type=fcc symbol=Ar nx=3 ny=3 nz=3
 
+monitor step,temperature,pressure,total-energy each=10 start=0 end=-1
+
 steps 10000
 
 set optimize-simulation false
 
-#prepare replicate nx=2 ny=2 nz=2
-prepare temperature t=1.0
+prepare replicate nx=2 ny=2 nz=2
+prepare temperature t=10.0
 
 use cellscaling as cs
  percent 0.5
@@ -22,7 +24,7 @@ use lennardjones
 enduse
 
 use velocityverlet as integ
-    dt 5.0
+    dt 1.0
 enduse
 
 #use euler as integ
@@ -38,8 +40,8 @@ enduse
 
 use lpvisual
     radius 0.5
-    width 1500
-    height 800
+    width 640
+    height 480
     quality 2
     azimuth 0
     zenith 0
@@ -50,6 +52,6 @@ cellmanager linkedcell
 potential lennardjones Ar Ar
 integrator integ
 
-apply cs start=0 end=10000 each=500
-visualize lpvisual start=0 end=10000 each=1
+apply cs start=0 end=10000 each=50
+visualize lpvisual start=0 end=10000 each=10
 

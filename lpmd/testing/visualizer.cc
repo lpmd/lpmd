@@ -42,6 +42,10 @@ int Visualizer::Run()
  SetPotentials();
  ApplyPrepares();
  ApplyFilters();
+ if (innercontrol.Defined("cellmanager-module"))
+ {
+  simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
+ }
  //
  Iterate();
  //
