@@ -5,7 +5,7 @@
 
 @test Ayuda simple
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-h" };
  qmp.Parse(2, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -15,7 +15,7 @@
 
 @test Modo verbose
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-v" };
  qmp.Parse(2, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -25,7 +25,7 @@
 
 @test Ayuda de plugins
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-p", "gdr" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -35,7 +35,7 @@
 
 @test Option
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-O", "foo=bar,hola=mundo" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -45,7 +45,7 @@
 
 @test ReplaceCell
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-r" };
  qmp.Parse(2, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -55,7 +55,7 @@
 
 @test Cubic cell
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-L", "50.0" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -65,7 +65,7 @@
 
 @test Orthogonal cell
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-L", "50.0,20.0,30.0" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -75,7 +75,7 @@
 
 @test NonOrthogonal cell
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-L", "50.0,20.0,30.0", "-A", "90.0,60.0,120.0" };
  qmp.Parse(5, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -85,7 +85,7 @@
 
 @test Vector cell
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-V", "2.0,0.0,0.0,0.0,3.0,0.0,0.0,0.0,4.0" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -95,7 +95,7 @@
 
 @test Scale 
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-L", "5.0,2.0,3.0", "-S", "10.0" };
  qmp.Parse(5, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -105,7 +105,7 @@
 
 @test Input
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-i", "xyz:archivo.xyz,zerocm=true,level=2" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -115,7 +115,7 @@
 
 @test Output
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-o", "lpmd:archivo.lpmd,level=0" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
@@ -125,17 +125,17 @@
 
 @test Use
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("# use");
  const char * argv[] = { "lpmd", "-u", "gdr:rcut=7.0,bins=200,output=gdr.dat" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();
- @equal control, "use gdr\nrcut 7.0\nbins 200\noutput gdr.dat\nenduse\n"
+ @equal control, "use gdr\nrcut 7.0\nbins 200\noutput gdr.dat\nenduse\n# use gdr\n"
 }
 @end
 
 @test Cellmanager
 {
- QuickModeParser qmp;
+ QuickModeParser qmp("test");
  const char * argv[] = { "lpmd", "-c", "linkedcell:cutoff=7.0,nx=7,ny=7,nz=7" };
  qmp.Parse(3, argv);
  std::string control = qmp.FormattedAsControlFile();

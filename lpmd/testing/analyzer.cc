@@ -6,6 +6,7 @@
 
 #include "analyzer.h"
 #include "quickmode.h"
+#include "config.h"
 
 #include <fstream>
 #include <lpmd/value.h>
@@ -95,6 +96,7 @@ void Analyzer::Iterate()
  while (true)
  {
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
+  UpdateAtomicIndices();
   ApplyPrepares();
   ApplyFilters();
   ComputeProperties();
@@ -107,8 +109,13 @@ void Analyzer::Iterate()
 Analyzer::Analyzer(int argc, const char * argv[]): Application("LPMD Analyzer", "lpmd-analyzer", control), control(pluginmanager)
 {
  replay = 0;
+ std::cerr << "\nLPMD Analyzer, version " << VERSION << "\n\n";
  ProcessControl(argc, argv, "property");
 }
 
-Analyzer::~Analyzer() { delete replay; }
+Analyzer::~Analyzer()
+{ 
+ std::cerr << "-> Done.\n";
+ delete replay; 
+}
 

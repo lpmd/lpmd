@@ -200,32 +200,6 @@
 }
 @end
 
-@test Bloques type
-{
- std::string data = "#\n#\n#\n";
- data += "type muralla\n";
- data += "    fixedpos true\n";
- data += "endtype\n";
- data += "type piston\n";
- data += "    fixedvel true\n";
- data += "endtype\n";
-
- ParamList opts;
- PluginManager pm;
- UtilityControl uc(pm);
- std::istringstream istr(data);
- uc.Read(istr, opts, "prueba");
- Array<TypeInfo> & types = uc.Types();
- @equal types.Size(), 2
- @equal types[0].name, "muralla"
- @assert bool(types[0]["fixedpos"])
- @assert (! bool(types[0]["fixedvel"]))
- @equal types[1].name, "piston"
- @assert (! bool(types[1]["fixedpos"]))
- @assert bool(types[1]["fixedvel"])
-}
-@end
-
 @test Instruccion input
 {
  std::string data = "#\n#\n#\n";
@@ -397,6 +371,19 @@
  std::istringstream istr(data);
  uc.Read(istr, opts, "prueba");
  @equal uc["visualize-modules"], "monitor "
+}
+@end
+
+@test Instruccion average
+{
+ std::string data = "#\n#\n#\n";
+ data += "average potential-energy,temperature interval=1500 start=10 end=7000 each=50\n";
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["visualize-modules"], "average "
 }
 @end
 

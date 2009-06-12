@@ -6,6 +6,7 @@
 
 #include "visualizer.h"
 #include "quickmode.h"
+#include "config.h"
 #include "replayintegrator.h"
 
 #include <fstream>
@@ -59,9 +60,11 @@ void Visualizer::Iterate()
  while (true)
  {
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
+  UpdateAtomicIndices();
   ApplyPrepares();
   ApplyFilters();
   if (control.Defined("delay")) usleep(long(double(control["delay"])*1000000.0));
+  RunModifiers();
   RunVisualizers();
   if (inputfile_stream == 0) break;
   try { simulation->DoStep(); }
@@ -72,6 +75,12 @@ void Visualizer::Iterate()
 
 Visualizer::Visualizer(int argc, const char * argv[]): Application("LPMD Visualizer", "lpmd-visualizer", control), control(pluginmanager)
 {
+ std::cerr << "\nLPMD Visualizer, version " << VERSION << "\n\n";
  ProcessControl(argc, argv, "visualize");
+}
+
+Visualizer::~Visualizer()
+{
+ std::cerr << "-> Done.\n";
 }
 

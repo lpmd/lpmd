@@ -13,10 +13,10 @@
 
 void Application::PrintBanner(const std::string & text)
 {
- std::cout << std::setfill('*');
+ std::cout << std::setfill('=');
  std::cout << std::endl;
  std::cout << std::setw(80) << "" << std::endl;
- std::cout << "* " << std::setw(78) << std::left << text+" " << std::endl;
+ std::cout << "===================== " << std::setw(58) << std::left << text+" " << std::endl;
  std::cout << std::setw(80) << "" << std::endl;
  std::cout << std::setfill(' ');
 }

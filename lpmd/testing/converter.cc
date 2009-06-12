@@ -6,6 +6,7 @@
 
 #include "converter.h"
 #include "quickmode.h"
+#include "config.h"
 #include "replayintegrator.h"
 
 #include <fstream>
@@ -41,6 +42,7 @@ void Converter::Iterate()
  while (true)
  {
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
+  UpdateAtomicIndices();
   ApplyPrepares();
   ApplyFilters();
   RunModifiers();
@@ -55,6 +57,11 @@ void Converter::Iterate()
 
 Converter::Converter(int argc, const char * argv[]): Application("LPMD Converter", "lpmd-converter", control), control(pluginmanager)
 {
+ std::cerr << "\nLPMD Converter, version " << VERSION << "\n\n";
  ProcessControl(argc, argv, "apply");
 }
 
+Converter::~Converter()
+{
+ std::cerr << "-> Done.\n";
+}

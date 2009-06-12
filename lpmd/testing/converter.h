@@ -14,6 +14,7 @@ class Converter: public Application
 {
  public:
    Converter(int argc, const char * argv[]);
+   ~Converter();
 
    void FillAtoms();
    void Iterate();

@@ -4,7 +4,7 @@
 
 name = lpmd
 fullname = 'LPMD'
-version = 0.6.0alpha
+version = 0.6.0rc1
 author = 'GNM <gnm@gnm.cl>'
 prefix = /usr/local
 

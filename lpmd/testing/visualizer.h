@@ -20,6 +20,7 @@ class Visualizer: public Application
 {
  public:
    Visualizer(int argc, const char * argv[]);
+   ~Visualizer();
 
    int Run();
    void FillAtoms();

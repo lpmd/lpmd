@@ -26,6 +26,8 @@ class Application
    void AutoTestPlugin(const std::string & pluginname);
 
    void FillAtomsFromCellReader();
+   void UpdateAtomicIndices();
+   void ShowApplicableModules(const std::string & kind);
    void RunModifiers();
    void RunVisualizers();
    void SaveCurrentConfiguration();

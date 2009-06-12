@@ -5,7 +5,9 @@ output xyz output.xyz each=10
 
 steps 5000
 
-monitor step,potential-energy,kinetic-energy,total-energy,temperature start=0 end=5000 each=100
+monitor step,total-energy,temperature start=0 end=-1 each=100
+#average total-energy,temperature,pressure interval=500 start=0 end=-1 each=10
+
 prepare temperature t=10.0
 
 use lennardjones
@@ -14,57 +16,28 @@ use lennardjones
     cutoff 8.5
 enduse
 
-#use leapfrog
-#    dt 1.0
-#enduse
-
-use euler
+use beeman as integ
     dt 1.0
 enduse
 
-#use linkedcell
-#    cutoff 8.0
-#    nx 7
-#    ny 7
-#    nz 7
-#enduse
-
 use minimumimage
     cutoff 8.0
-    debug none
 enduse
 
-use printatoms
-    from 0
-    to 0
-enduse
-
-use cna
-    rcut 4.6
-    output cna.dat
-    mode defects
-    reference fcc
-    average false
+use gdr
+    rcut 10.0
+    output gdr.dat
 enduse
 
 use tempscaling
-    from 168.0
-    to 5.0
+    from 10.0
+    to 140.0
 enduse
 
-use veldist
-    bins 200
-    output veldist.dat
-    average true
-enduse
-
-#cellmanager linkedcell
 cellmanager minimumimage
 
 potential lennardjones Ar Ar
-#integrator leapfrog start=0
-integrator euler start=0
-
-#property cna start=0 end=5000 each=500 over sphere radius=5.0 center=<8.56,8.56,8.56>
-#property veldist start=0 end=5000 each=250
+integrator integ
+apply tempscaling each=250
+property gdr each=100
 

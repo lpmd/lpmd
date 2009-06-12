@@ -69,15 +69,22 @@ void Application::ProcessControl(int argc, const char * argv[], const std::strin
  else if (quick.Defined("test-plugin")) AutoTestPlugin(quick["test-plugin-name"]);
  else
  {
-  ParamList options;
   if (quick.Arguments().Size() == 1)
   {
    std::istringstream generatedcontrol(quick.FormattedAsControlFile());
-   innercontrol.Read(generatedcontrol, options, "quickmode"); 
+   innercontrol.Read(generatedcontrol, innercontrol, "quickmode"); 
    if (pluginmanager.IsLoaded("help_plugin")) ShowPluginHelp();
    else if (!innercontrol.Defined("cell-type")) ShowHelp();
+   std::cerr << "-> Using quick mode (no control file)\n";
   }
-  else innercontrol.Read(quick.Arguments()[1], options);
+  else 
+  {
+   std::cerr << "-> Reading quickmode flags\n";
+   std::istringstream generatedcontrol(quick.FormattedAsControlFile());
+   innercontrol.Read(generatedcontrol, innercontrol, "quickmode");
+   std::cerr << "-> Using control file: " << quick.Arguments()[1] << '\n';
+   innercontrol.Read(quick.Arguments()[1], innercontrol);
+  }
  }
  if (quick.Defined("verbose")) 
  {
@@ -143,6 +150,11 @@ void Application::ConstructSimulation()
 void Application::FillAtoms()
 {
  CellGenerator & cg = CastModule<CellGenerator>(pluginmanager["input1"]);
+ if (name == "LPMD") 
+ {
+  PrintBanner("INPUT MODULES"); 
+  pluginmanager["input1"].Show(std::cout);
+ }
  cg.Generate(*simulation);
  if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
  else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
@@ -182,6 +194,13 @@ void Application::OptimizeSimulationAtStart()
  simulation = &(SimulationBuilder::CloneOptimized(*simulation));
 }
 
+void Application::UpdateAtomicIndices()
+{
+ Tag indextag("index");
+ BasicParticleSet & atoms = simulation->Atoms();
+ for (long int i=0;i<atoms.Size();++i) atoms.SetTag(atoms[i], indextag, i);
+}
+
 void Application::AdjustAtomProperties()
 {
  if (simulation == 0) throw InvalidOperation("Adjusting atomic properties on an uninitialized Simulation");
@@ -209,11 +228,13 @@ void Application::AdjustAtomProperties()
 
 void Application::ApplyPrepares()
 {
+ if (name == "LPMD") PrintBanner("PREPARE MODULES");
  Array<std::string> prepares = StringSplit(innercontrol["prepare-modules"]);
  for (int p=0;p<prepares.Size();++p)
  {
   std::string id = "prepare"+ToString(p+1);
   SystemModifier & sm = CastModule<SystemModifier>(pluginmanager[id]);
+  if (name == "LPMD") pluginmanager[id].Show(std::cout);
   Cell original_cell(simulation->Cell());
   sm.Apply(*simulation);
   if (simulation->Cell() != original_cell) simulation->RescalePositions(original_cell);
@@ -222,11 +243,13 @@ void Application::ApplyPrepares()
 
 void Application::ApplyFilters()
 {
+ if (name == "LPMD") PrintBanner("FILTER MODULES");
  Array<std::string> filters = StringSplit(innercontrol["filter-modules"]);
  for (int p=0;p<filters.Size();++p)
  {
   std::string id = "filter"+ToString(p+1);
   SystemFilter & sfilt = CastModule<SystemFilter>(pluginmanager[id]);
+  if (name == "LPMD") pluginmanager[id].Show(std::cout);
   Cell original_cell(simulation->Cell());
   sfilt.Apply(*simulation);
   if (simulation->Cell() != original_cell) simulation->RescalePositions(original_cell);
@@ -238,17 +261,30 @@ void Application::SetPotentials()
  if (simulation == 0) throw InvalidOperation("Setting potentials on an uninitialized Simulation");
  CombinedPotential & potentials = simulation->Potentials();
  Array<Parameter> pkeys = innercontrol.Potentials().Parameters();
+ if (name == "LPMD") PrintBanner("INTERATOMIC POTENTIALS");
  for (int p=0;p<pkeys.Size();++p) 
  {
-  Potential & pot = CastModule<Potential>(pluginmanager[innercontrol.Potentials()[pkeys[p]]]);
+  Plugin & plugin = pluginmanager[innercontrol.Potentials()[pkeys[p]]];
+  Potential & pot = CastModule<Potential>(plugin);
   int spc1 = ElemNum(SplitSpeciesPair(pkeys[p])[0]);
   int spc2 = ElemNum(SplitSpeciesPair(pkeys[p])[0]);
   pot.SetValidSpecies(spc1, spc2);
   potentials.Append(pot);
+  if (name == "LPMD") plugin.Show(std::cout);
  } 
 }
 
 void Application::Iterate() {  }
+
+void Application::ShowApplicableModules(const std::string & kind)
+{
+ Array<std::string> modules = StringSplit(innercontrol[kind+"-modules"]);
+ for (int p=0;p<modules.Size();++p)
+ {
+  Module & rawmodule = pluginmanager[modules[p]];
+  rawmodule.Show(std::cout);
+ }
+}
 
 template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityControl & control, Simulation & simulation, const std::string & kind)
 {
@@ -271,6 +307,7 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
     Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
     simulation.ApplyAtomMask(selector); 
     Cell original_cell(simulation.Cell());
+    if ((mod.end == -1) && control.Defined("steps-number")) mod.end = int(control["steps-number"]);
     mod.Apply(simulation);
     if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
     simulation.RemoveAtomMask();
@@ -278,6 +315,7 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
    else
    {
     Cell original_cell(simulation.Cell());
+    if ((mod.end == -1) && control.Defined("steps-number")) mod.end = int(control["steps-number"]);
     mod.Apply(simulation);
     if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
    }
@@ -325,6 +363,7 @@ void Application::ComputeProperties()
 
 void Application::OpenPropertyStreams()
 {
+ if (name == "LPMD") PrintBanner("INSTANTANEOUS PROPERTIES");
  propertystream.Clear();
  Array<std::string> properties = StringSplit(innercontrol["property-modules"]); 
  for (int p=0;p<properties.Size();++p)
@@ -333,6 +372,7 @@ void Application::OpenPropertyStreams()
   const std::string filename = pluginmanager[pluginname]["output"];
   propertystream.Append(new std::ofstream(filename.c_str()));
   Module & rawmodule = pluginmanager[properties[p]];
+  if (name == "LPMD") rawmodule.Show(std::cout);
   lpmd::AbstractValue & value = CastModule<lpmd::AbstractValue>(rawmodule);
   value.ClearAverage();
  }
@@ -354,13 +394,14 @@ void Application::OpenOutputStreams()
 {
  Array<std::string> outstreams = StringSplit(innercontrol["output-modules"]); 
  outputstream = new std::ofstream*[outstreams.Size()];
+ if (name == "LPMD") PrintBanner("OUTPUT MODULES");
  for (int p=0;p<outstreams.Size();++p)
  {
   const std::string & plugin_id = "output"+ToString(p+1);
   Module & modl = pluginmanager[plugin_id];
   if (!modl.Defined("start")) modl["start"] = "0";
   if (!modl.Defined("end")) modl["end"] = "-1";
-  modl.Show(std::cerr);
+  if (name == "LPMD") modl.Show(std::cout);
   const std::string filename = pluginmanager[plugin_id]["file"];
   outputstream[p] = new std::ofstream(filename.c_str());
   CellWriter & cellwriter = CastModule<CellWriter>(pluginmanager[plugin_id]);

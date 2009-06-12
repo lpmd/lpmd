@@ -14,7 +14,6 @@ class UControlImpl
  public:
    PluginManager * pluginmanager;
    Array<ModuleInfo> plugins;
-   Array<TypeInfo> types;
    Array<std::string> pluginpath;
    ParamList potentials;
    ParamList bonds;
@@ -42,10 +41,10 @@ UtilityControl::UtilityControl(PluginManager & pm)
  DeclareStatement("mass", "group value");
  DeclareStatement("charge", "group value");
  DeclareStatement("monitor", "properties start end each output");
+ DeclareStatement("average", "properties interval start end each output");
 
  //
  DeclareBlock("use", "enduse");
- DeclareBlock("type", "endtype");
 
  // 
  ParamList & params = (*this);
@@ -98,17 +97,17 @@ int UtilityControl::OnRegularStatement(const std::string & name, const std::stri
     massgroups[params["mass-group"]] = params["mass-value"];
  else if (name == "charge")
     chargegroups[params["charge-group"]] = params["charge-value"];
- else if (name == "monitor")
+ else if ((name == "monitor") || (name == "average"))
  {
   std::string line;
-  line = "visualize monitor start="+params["monitor-start"]+" ";
-  line += ("end="+params["monitor-end"]+" each="+params["monitor-each"]+"\n");
-  if (params["monitor-output"] == "") params["monitor-output"] = "-";
+  line = "visualize "+name+" start="+params[name+"-start"]+" ";
+  line += ("end="+params[name+"-end"]+" each="+params[name+"-each"]+"\n");
+  if (params[name+"-output"] == "") params[name+"-output"] = "-";
   
   ModuleInfo module_info("", "", ""); // FIXME
-  module_info.name = "monitor";
-  module_info.id = "monitor";
-  module_info.args = ("properties "+params["monitor-properties"]+" output "+params["monitor-output"]);
+  module_info.name = name;
+  module_info.id = name;
+  module_info.args = ("properties "+params[name+"-properties"]+" output "+params[name+"-output"]);
   (impl->pluginmanager)->LoadPlugin(module_info);
   impl->plugins.Append(module_info);
   ReadLine(line);
@@ -223,30 +222,12 @@ int UtilityControl::OnBlock(const std::string & name, const std::string & full_s
   //
   impl->plugins.Append(module_info);
  }
- else if (name == "type")
- {
-  TypeInfo type_info;
-  Array<std::string> tokens = StringSplit(full_statement);
-  assert(tokens[0] == "typeblock");
-  type_info.name = tokens[1];
-  tokens.Delete(0);
-  tokens.Delete(0);
-  while (tokens.Size() > 0)
-  {
-   type_info[tokens[0]] = tokens[1];
-   tokens.Delete(0);
-   tokens.Delete(0);
-  }
-  impl->types.Append(type_info);
- }
  else return 1;
  return 0;
 }
 
 Array<ModuleInfo> & UtilityControl::Plugins() const { return impl->plugins; }
 
-Array<TypeInfo> & UtilityControl::Types() const { return impl->types; }
-  
 Array<std::string> & UtilityControl::PluginPath() const { return impl->pluginpath; }
 
 ParamList & UtilityControl::Potentials() const { return impl->potentials; } 

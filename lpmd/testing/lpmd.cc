@@ -5,6 +5,7 @@
  */
 
 #include "lpmd.h"
+#include "config.h" 
 #include "palmtree.h"
 #include <lpmd/combinedpotential.h>
 #include <lpmd/integrator.h>
@@ -34,11 +35,21 @@ int main(int argc, const char * argv[])
 void LPMD::FillAtoms() 
 {
  Application::FillAtoms();
+ PrintBanner("CELL MANAGER");
+ pluginmanager[control["cellmanager-module"]].Show(std::cout);
+ PrintBanner("INITIAL CONFIGURATION");
  simulation->ShowInfo(std::cout);
 }
 
 void LPMD::Iterate()
 {
+ PrintBanner("SYSTEM MODIFIERS");
+ ShowApplicableModules("apply");
+ PrintBanner("VISUALIZERS");
+ ShowApplicableModules("visualize");
+ PrintBanner("INTEGRATOR");
+ pluginmanager[control["integrator-module"]].Show(std::cout);
+
  BasicParticleSet & atoms = simulation->Atoms();
  //
  simulation->SetIntegrator(CastModule<Integrator>(pluginmanager[control["integrator-module"]]));
@@ -53,11 +64,12 @@ void LPMD::Iterate()
  Timer timer;
  timer.Start();
  long nsteps = int(control["steps-number"]);
+ PrintBanner("SIMULATION STARTED"); 
  for (long i=0;i<nsteps;++i)
  {
+  UpdateAtomicIndices();
   for (int k=0;k<atoms.Size();++k) atoms[k].Acceleration() = Vector(0.0, 0.0, 0.0);
   simulation->DoStep();
-  
   RunModifiers();
   ComputeProperties();
   RunVisualizers();
@@ -65,13 +77,14 @@ void LPMD::Iterate()
  }
 
  timer.Stop();
- std::cout << "Simulation over " << nsteps << " steps\n";
+ PrintBanner("SIMULATION FINISHED"); 
  timer.ShowElapsedTimes();
 }
 
 LPMD::LPMD(int argc, const char * argv[]): Application("LPMD", "lpmd", control), control(pluginmanager)
 {
  PrintPalmTree();
+ PrintBanner("LPMD VERSION "+std::string(VERSION));
  ProcessControl(argc, argv, "visualize");
 }
 
