@@ -1,6 +1,5 @@
 
 #include "../controlparser.h"
-#include "../typeinfo.h"
 #include <lpmd/moduleinfo.h>
 #include <lpmd/pluginmanager.h>
 
