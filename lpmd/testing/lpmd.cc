@@ -73,6 +73,7 @@ void LPMD::Iterate()
   RunModifiers();
   ComputeProperties();
   RunVisualizers();
+  if (control.Defined("extraverbose")) simulation->ShowInfo(std::cout);
   SaveCurrentConfiguration();
  }
 

@@ -18,7 +18,7 @@ class Application
 {
  public:
    Application(const std::string & appname, const std::string & cmdname, UtilityControl & uc);
-   ~Application();
+   virtual ~Application();
 
    void PrintBanner(const std::string & text);
    void ShowPluginHelp();

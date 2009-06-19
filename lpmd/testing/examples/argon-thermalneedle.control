@@ -1,0 +1,53 @@
+
+cell cubic 34.4
+input crystal3d type=fcc symbol=Ar nx=6 ny=6 nz=6
+
+steps 3000
+
+monitor step,total-energy,temperature start=0 end=-1 each=5 output=salida.dat
+
+set optimize-simulation true
+
+prepare temperature t=10.0
+
+use lennardjones
+    sigma 3.41
+    epsilon 0.0103408
+    cutoff 8.5
+enduse
+
+use beeman as integ
+    dt 1.0
+enduse
+
+use linkedcell
+    cutoff 8.0
+    nx 15
+    ny 15
+    nz 15
+enduse
+
+use tempscaling
+    from 10000.0
+    to 10000.0
+enduse
+
+use lpvisual
+    debug none
+enduse
+
+use propertycolor as tempcolor
+    property temperature
+    min 0.0
+    max 300.0
+    debug none
+enduse
+
+cellmanager linkedcell
+
+potential lennardjones Ar Ar
+integrator integ
+apply tempscaling each=1 start=200 end=201 over sphere radius=8.5 center=<17.12,17.12,17.12>
+apply tempcolor
+visualize lpvisual
+
