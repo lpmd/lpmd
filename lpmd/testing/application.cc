@@ -123,6 +123,31 @@ void Application::ConstructCell()
   box[2] = double(innercontrol["cell-c"]);
   double scale = double(innercontrol["cell-scale"]);
   for (int q=0;q<3;++q) cell[q] = box[q]*scale*identity[q];
+  double alpha=90,beta=90,gamma=90;
+  if(innercontrol.Defined("cell-alpha"))
+  {
+   alpha = double(innercontrol["cell-alpha"]);
+  }
+  if(innercontrol.Defined("cell-beta"))
+  {
+   beta = double(innercontrol["cell-beta"]);
+  }
+  if(innercontrol.Defined("cell-gamma"))
+  {
+   gamma = double(innercontrol["cell-gamma"]);
+  }
+  alpha = alpha*M_PI/180.0;
+  beta = beta*M_PI/180.0;
+  gamma = gamma*M_PI/180.0;
+  cell[0][1] = 0.0e0;
+  cell[0][2] = 0.0e0;
+  cell[1][0] = cell[1][0]*cos(gamma);
+  cell[1][1] = cell[1][1]*cos(gamma);
+  cell[1][2] = 0.0e0;
+  cell[2][0] = cell[2][0]*cos(beta);
+  double tmp=(cos(alpha)-cos(gamma)*cos(beta))/sin(gamma);
+  cell[2][1] = cell[2][1]*tmp;
+  cell[2][2] = cell[2][1]*sqrt(sin(beta)*sin(beta)-tmp*tmp);
  }
  else if (celltype == "vector")
  {
