@@ -61,6 +61,7 @@ UtilityControl::~UtilityControl() { delete impl; }
 void UtilityControl::Read(const std::string & filename, const ParamList & options)
 {
  ControlFile::Read(filename, options);
+ if (bool((*this)["replacecell"])) (*this)["cell-type"] = "automatic";
 }
 
 void UtilityControl::Read(std::istream & istr, const ParamList & options, const std::string & filename)

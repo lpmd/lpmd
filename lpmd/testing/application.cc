@@ -124,7 +124,7 @@ void Application::ConstructCell()
   double scale = double(innercontrol["cell-scale"]);
   for (int q=0;q<3;++q) cell[q] = box[q]*scale*identity[q];
  }
- else 
+ else if (celltype == "vector")
  {
   double ax, ay, az;
   ax = double(innercontrol["cell-ax"]);
@@ -142,6 +142,7 @@ void Application::ConstructCell()
   cz = double(innercontrol["cell-cz"]);
   cell[2] = Vector(cx, cy, cz);
  }
+ else throw RuntimeError("The cell type must be \'cubic\', \'crystal\' or \'vector\' (or you must use the replacecell flag, -r)");
 }
 
 void Application::ConstructSimulation()
