@@ -141,13 +141,13 @@ void Application::ConstructCell()
   gamma = gamma*M_PI/180.0;
   cell[0][1] = 0.0e0;
   cell[0][2] = 0.0e0;
-  cell[1][0] = cell[1][0]*cos(gamma);
-  cell[1][1] = cell[1][1]*cos(gamma);
+  cell[1][0] = box[1]*cos(gamma);
+  cell[1][1] = box[1]*sin(gamma);
   cell[1][2] = 0.0e0;
-  cell[2][0] = cell[2][0]*cos(beta);
+  cell[2][0] = box[2]*cos(beta);
   double tmp=(cos(alpha)-cos(gamma)*cos(beta))/sin(gamma);
-  cell[2][1] = cell[2][1]*tmp;
-  cell[2][2] = cell[2][1]*sqrt(sin(beta)*sin(beta)-tmp*tmp);
+  cell[2][1] = box[2]*tmp;
+  cell[2][2] = box[2]*sqrt(sin(beta)*sin(beta)-tmp*tmp);
  }
  else if (celltype == "vector")
  {
