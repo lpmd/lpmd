@@ -49,7 +49,7 @@ cellmanager linkedcell
 
 potential lennardjones Ar Ar
 integrator integ
-apply tempscaling each=1 start=1 end=2000 over box x=10-68.8 y=10-68.8 z=10-20
+apply tempscaling each=1 start=1 end=-1 over box x=0-68.8 y=0-68.8 z=0-20
 apply tempcolor
 visualize lpvisual
 
