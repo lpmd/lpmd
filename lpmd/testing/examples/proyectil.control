@@ -3,18 +3,23 @@ cell cubic 34.238
 input module=lpmd file=proyectil.lpmd level=1
 output module=lpmd file=output.lpmd each=10
 
+use setcolor as red
+    color <1.0,0.0,0.0>
+enduse
+
 use setvelocity 
     velocity <0,0,-0.01>
 enduse
 
-apply setvelocity over sphere radius=5 center=<17.911,17.911,26.827>
+apply red over sphere radius=5 center=<17.911,17.911,26.827> start=0 end=1 each=1
+apply setvelocity over sphere radius=5 center=<17.911,17.911,26.827> start=0 end=1 each=1
 
 use settag as proyectil
     tag fixedvel
     value true
 enduse
 
-apply proyectil over sphere radius=5 center=<17.911,17.911,26.827>
+apply proyectil over sphere radius=5 center=<17.911,17.911,26.827> start=0 end=1 each=1
 
 steps 100000
 
