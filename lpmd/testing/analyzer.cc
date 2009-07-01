@@ -99,6 +99,7 @@ void Analyzer::Iterate()
  else if (replay != 0) { simulation->SetIntegrator(*replay); }
  while (true)
  {
+  std::cerr << "-> Processing configuration " << simulation->CurrentStep() << '\n';
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
   ApplyPrepares();

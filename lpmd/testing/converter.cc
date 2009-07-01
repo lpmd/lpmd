@@ -41,6 +41,7 @@ void Converter::Iterate()
  }
  while (true)
  {
+  std::cerr << "-> Processing configuration " << simulation->CurrentStep() << '\n';
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
   ApplyPrepares();
