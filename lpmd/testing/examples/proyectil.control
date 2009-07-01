@@ -11,16 +11,15 @@ use setvelocity
     velocity <0,0,-0.01>
 enduse
 
-apply red over sphere radius=5 center=<17.911,17.911,26.827> start=0 end=1 each=1
-apply setvelocity over sphere radius=5 center=<17.911,17.911,26.827> start=0 end=1 each=1
+apply red start=0 end=1 each=1 over sphere radius=5 center=<17.911,17.911,26.827> 
+apply setvelocity start=0 end=1 each=1 over sphere radius=5 center=<17.911,17.911,26.827>
 
 use settag as proyectil
     tag fixedvel
     value true
 enduse
 
-apply proyectil over sphere radius=5 center=<17.911,17.911,26.827> start=0 end=1 each=1
-
+apply proyectil start=0 end=1 each=1 over sphere radius=5 center=<17.911,17.911,26.827>
 steps 100000
 
 monitor step,potential-energy,kinetic-energy,total-energy,temperature start=0 end=100000 each=500
