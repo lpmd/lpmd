@@ -17,7 +17,7 @@ language lpunit
 end
 
 directory .
-    staticlibrary liblpmdutility.a
+    staticlibrary liblpmdutility
        language = c++
        sources = controlparser.cc quickmode.cc replayintegrator.cc application.cc autotest.cc help.cc palmtree.cc
        pkgconfig += liblpmd-2.0
