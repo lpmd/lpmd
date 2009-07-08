@@ -27,6 +27,7 @@ languageLinking = None
 defaultCompiler = None
 defaultLinker = None 
 libraryNamePattern = None
+librarySemiNamePattern = None
 libraryExtensions = None
 librarySharedFlags = None
 librarySharedLinkerFlags = None 
@@ -162,7 +163,9 @@ class Language(Item):
     def Apply(self, pattern, target, sources=[], objects=[]):
         if not self.IsCompiled(): return None
         compilableSources = [x for x in sources if self.IsFileCompilable(x)]
-        return pattern % {'target': target.name, 'compiler': target.compiler, 'linkflags': target.libraries, 
+        installname = target.name
+        if hasattr(target, 'installname') and target.installname != '': installname = target.installname
+        return pattern % {'target': installname, 'compiler': target.compiler, 'linkflags': target.libraries, 
                           'compilerflags': target.flags, 'linker': target.linker, 
                           'source': ' '.join(compilableSources), 'prefix': target.setup.prefix, 'object': ' '.join(objects)}
 
@@ -192,6 +195,7 @@ class Target(Item):
                  if len(namesplit) > 2: raise SyntaxError('A library or sharedlibrary name should not include any extension')
                  base_name, extension = name.split('.')
                  self.installname = libraryNamePattern % {'name': base_name, 'extension': extension, 'major': int(self.major), 'minor': int(self.minor), 'revision': int(self.revision)}
+                 self.semiinstallname = librarySemiNamePattern % {'name': base_name, 'extension': extension, 'major': int(self.major), 'minor': int(self.minor), 'revision': int(self.revision)}
                  self.libraries += (librarySharedLinkerFlags % {'shortname': name, 'major': int(self.major), 'minor': int(self.minor), 'output': self.installname})
               elif self.targettype == 'module': self.libraries += moduleSharedLinkerFlags
            if not hasattr(self, 'compiler') and hasattr(self.language, 'compiler'):
@@ -327,6 +331,8 @@ class Directory(dict):
                   mf += ('\t%s -v -D %s %s\n' % (self.setup.install, rt, self[t].installpath))
                if hasattr(self[t], 'installname') and self[t].installname != t:
                   mf += ('\t%s %s %s\n' % ('cp -vd', t, self[t].installpath))
+               if hasattr(self[t], 'semiinstallname') and self[t].semiinstallname != t:
+                  mf += ('\t%s %s %s\n' % ('cp -vd', self[t].semiinstallname, self[t].installpath))
                if self[t].targettype == 'library' and self[t].installpath not in ldconfig_libs:
                   ldconfig_libs.append(self[t].installpath)
         if self.setup.platform == 'linux':
@@ -362,18 +368,36 @@ class Directory(dict):
                   mf += '\n'
                   already_included_dependencies.append(s)
               explicit_libraries = [ lib for lib in self[t].libraries.split() if FileExtension(lib) in libraryExtensions]
+              if hasattr(self[t], 'installname') and self[t].installname.strip() != '': 
+                 explicit_libraries = [ x for x in explicit_libraries if x != self[t].installname ]
               mf += (t+': '+(' '.join(dependencies)+' '+' '.join(explicit_libraries)).strip()+'\n')
               if self[t].language.IsCompiled():
                  objlist = dependencies
-                 if self[t].targettype == 'binary' or self[t].targettype == 'library' or self[t].targettype == 'module':
+                 if self[t].targettype == 'binary' or self[t].targettype == 'module':
+                    #
+                    # Build binaries or modules
+                    # 
                     lapply = self[t].language.Apply(languageLinking[self[t].language.name], self[t], objects=objlist)
                     if lapply != None: mf += ('\t'+lapply+'\n')
                     if hasattr(self[t], 'installname') and self[t].installname != t:
                        mf += ('\trm -f %s\n\tln -s %s %s\n' % (t, self[t].installname, t))
                     mf += '\n'
+                 elif self[t].targettype == 'library':
+                    #
+                    # Build shared libraries
+                    #
+                    lapply = self[t].language.Apply(languageLinking[self[t].language.name], self[t], objects=objlist)
+                    if lapply != None: mf += ('\t'+lapply+'\n')
+                    mf += ('\trm -f %s\n\tln -s %s %s\n' % (t, self[t].installname, t))
+                    mf += ('\trm -f %s\n\tln -s %s %s\n' % (self[t].semiinstallname, self[t].installname, self[t].semiinstallname))
+                    mf += '\n'
                  elif self[t].targettype == 'staticlibrary':
+                    #
+                    # Build static libraries
+                    #
                     lapply = self[t].language.Apply(languageStaticLibraryPacking[self[t].language.name], self[t], objects=objlist)
                     if lapply != None: mf += ('\t'+lapply+'\n\n')
+                    #
                  for obj in objlist:
                      if obj not in objects: objects.append(obj)
         checktargets = [t for t in self.sortedtargets if hasattr(self[t], 'test') and self[t].test]
@@ -430,7 +454,7 @@ class SetupHandler:
     def SetupPlatformSpecificOptions(self):
         global defaultCompiler, defaultLinker, libraryExtensions, libraryNamePattern
         global librarySharedFlags, moduleSharedFlags, languageLinking
-        global librarySharedLinkerFlags, moduleSharedLinkerFlags
+        global librarySharedLinkerFlags, moduleSharedLinkerFlags, librarySemiNamePattern
         #
         if not hasattr(self, 'platform'): self.CheckPlatform()
         if self.platform == 'linux':
@@ -438,6 +462,7 @@ class SetupHandler:
            defaultCompiler = { 'c++': 'g++', 'c': 'gcc', 'lpunit': 'lpmaketest' }
            defaultLinker = { 'c++': 'g++', 'c': 'gcc', 'lpunit': 'g++' }
            libraryNamePattern = '%(name)s.%(extension)s.%(major)d.%(minor)d.%(revision)d'
+           librarySemiNamePattern = '%(name)s.%(extension)s.%(major)d'
            libraryExtensions = ['a', 'so']
            librarySharedFlags = ' -shared '
            librarySharedLinkerFlags = ' -shared -Wl,-export-dynamic -Wl,-soname,%(shortname)s.%(major)d -o %(output)s'
@@ -451,11 +476,12 @@ class SetupHandler:
            defaultCompiler = { 'c++': 'g++', 'c': 'gcc', 'lpunit': 'lpmaketest' }
            defaultLinker = { 'c++': 'g++', 'c': 'gcc', 'lpunit': 'g++' }
            libraryNamePattern = '%(name)s.%(major)d.%(minor)d.%(revision)d.%(extension)s'
+           librarySemiNamePattern = '%(name)s.%(major)d.%(extension)s'
            libraryExtensions = ['a', 'dylib']
            librarySharedFlags = ' -fno-common '
-           librarySharedLinkerFlags = ' ${wl}-undefined ${wl}dynamic_lookup -install_name %(output)s -compatibility_version %(major)d -current_version %(major)d.%(minor)d -Wl,-single_module -o %(output)s'
+           librarySharedLinkerFlags = ' -Wl,-undefined -Wl,dynamic_lookup -install_name %(output)s -compatibility_version %(major)d -current_version %(major)d.%(minor)d -Wl,-single_module'
            moduleSharedFlags = ' -fno-common -bundle '
-           moduleSharedLinkerFlags = '-fno-common ${wl}-undefined ${wl}dynamic_lookup -bundle '
+           moduleSharedLinkerFlags = '-fno-common -Wl,-undefined -Wl,dynamic_lookup -bundle '
            languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
                                'c': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
                                'lpunit': '%(linker)s -o %(target)s %(object)s %(linkflags)s' }
