@@ -23,6 +23,7 @@ languageStaticLibraryPacking  = { 'c++': 'ar rcs %(target)s %(object)s',
                                   'c': 'ar rcs %(target)s %(object)s',
                                   'lpunit': 'ar rcs %(target)s %(object)s' }
 
+openmpFlags = None
 languageLinking = None
 defaultCompiler = None
 defaultLinker = None 
@@ -34,12 +35,13 @@ librarySharedLinkerFlags = None
 moduleSharedFlags = None 
 moduleSharedLinkerFlags = None 
 
-languageFields =  ['flags', 'libraries', 'compiler']
-targetFields = ['test', 'language', 'sources', 'headers', 'installpath', 'pkgconfig', 'expand', 'version'] + languageFields
+languageFields =  ['flags', 'libraries', 'compiler', 'linker']
+targetFields = ['test', 'language', 'sources', 'headers', 'installpath', 'pkgconfig', 'expand', 'version', 'openmp'] + languageFields
 targetKinds = ['binary', 'script', 'library', 'staticlibrary', 'headers', 'module', 'file']
-globaltags = ['name', 'fullname', 'version', 'author', 'prefix']
+globaltags = ['name', 'fullname', 'version', 'author', 'prefix', 'openmp']
 blocktags = ['language', 'directory'] + targetKinds
-reserved_keywords = blocktags + targetFields + targetKinds
+commontags = ['openmp']
+reserved_keywords = [x for x in (blocktags + targetFields + targetKinds) if x not in commontags]
 
 #
 # Auxiliary functions
@@ -159,6 +161,9 @@ class Language(Item):
         for x in headerExtensions[self.name]:
             if name.lower().endswith('.'+x): return False
         return True
+
+    def SupportsOpenMP(self): 
+        return hasattr(self, 'openmpflags') and (self.openmpflags != '' or self.openmplibraries != '')
 
     def Apply(self, pattern, target, sources=[], objects=[]):
         if not self.IsCompiled(): return None
@@ -357,7 +362,16 @@ class Directory(dict):
                if self[t].targettype == 'script': mf += ('\tchmod "u+x" %s\n' % t)
                mf += '\n'
             else:
-              if self[t].language.IsCompiled(): dependencies = [ObjectFromSource(x) for x in dependencies if self[t].language.IsFileCompilable(x)]
+              if self[t].language.IsCompiled(): 
+                 dependencies = [ObjectFromSource(x) for x in dependencies if self[t].language.IsFileCompilable(x)]
+                 if self.setup.openmp:
+                    if not hasattr(self[t].language, 'openmpflags') and self[t].language.name in openmpFlags:
+                       self[t].language.openmpflags = openmpFlags[self[t].language.name]
+                    if not hasattr(self[t].language, 'openmplibraries') and self[t].language.name in openmpLibraries:
+                       self[t].language.openmplibraries = openmpLibraries[self[t].language.name]
+                    if self[t].language.SupportsOpenMP() and (not hasattr(self[t], 'openmp') or self[t].openmp == True):
+                       self[t].flags += ' '+self[t].language.openmpflags+' '
+                       self[t].libraries += ' '+self[t].language.openmplibraries+' '
               for s in self[t].sources:
                   if s in already_included_dependencies or not self[t].language.IsFileCompilable(s): continue
                   sources_from_s = []
@@ -401,6 +415,8 @@ class Directory(dict):
                  for obj in objlist:
                      if obj not in objects: objects.append(obj)
         checktargets = [t for t in self.sortedtargets if hasattr(self[t], 'test') and self[t].test]
+        library_targets = [t for t in self.sortedtargets if self[t].targettype == 'library']
+        cleanables = objects+checktargets+[self[x].installname for x in library_targets]+[self[x].semiinstallname for x in library_targets]
         makefile = Makefile()
         if len(subdirs) > 0:
            makefile.AddPhonyTarget('subdirs-install', [], [('cd %s && $(MAKE) install' % d) for d in subdirs])
@@ -413,7 +429,7 @@ class Directory(dict):
            makefile.AddPhonyTarget('clean', ['subdirs-clean'], 'rm -f $(TARGETS) %s' % (' '.join(objects)))
         else:
            makefile.AddPhonyTarget('check', checktargets, [('- ./'+x) for x in checktargets])
-           makefile.AddPhonyTarget('clean', [], 'rm -f $(TARGETS) %s' % (' '.join(objects)))
+           makefile.AddPhonyTarget('clean', [], 'rm -f $(TARGETS) %s' % (' '.join(cleanables)))
         mf += makefile.Render()
         return mf
 
@@ -430,6 +446,7 @@ class SetupHandler:
         self.ignore = []
         self.prefix = defaultPrefix
         self.install = defaultInstall
+        self.openmp = False
         for opt in options:
             if opt not in reserved_keywords: setattr(self, opt, options[opt])
             else: sys.stderr.write('[Warning] Ignoring invalid command line option, --%s\n' % opt)
@@ -453,7 +470,7 @@ class SetupHandler:
 
     def SetupPlatformSpecificOptions(self):
         global defaultCompiler, defaultLinker, libraryExtensions, libraryNamePattern
-        global librarySharedFlags, moduleSharedFlags, languageLinking
+        global librarySharedFlags, moduleSharedFlags, languageLinking, openmpFlags, openmpLibraries
         global librarySharedLinkerFlags, moduleSharedLinkerFlags, librarySemiNamePattern
         #
         if not hasattr(self, 'platform'): self.CheckPlatform()
@@ -471,6 +488,8 @@ class SetupHandler:
            languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
                                'c': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
                                'lpunit': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s' }
+           openmpFlags = { 'c++': '-fopenmp', 'c': '-fopenmp' }
+           openmpLibraries = { 'c++': '-lgomp', 'c': '-lgomp' }
         elif self.platform == 'darwin':
            sys.stdout.write('* Detected Mac OS X platform\n\n')
            defaultCompiler = { 'c++': 'g++', 'c': 'gcc', 'lpunit': 'lpmaketest' }
@@ -485,6 +504,8 @@ class SetupHandler:
            languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
                                'c': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
                                'lpunit': '%(linker)s -o %(target)s %(object)s %(linkflags)s' }
+           openmpFlags = { 'c++': '-fopenmp', 'c': '-fopenmp' }
+           openmpLibraries = { 'c++': '-lgomp', 'c': '-lgomp' }
         else: raise UnknownPlatform(self.platform)
 
     def AddToLibraryPath(self, d):
@@ -644,6 +665,7 @@ class SetupHandler:
             ans = self.HaveExecutable(comp)
             if ans == None and comp not in self.ignore: raise MissingComponent('compiler', comp)
             self.actualpath[comp] = ans
+        if self.openmp: print '\n* Using OpenMP directives'
         print '\n* Checking for other utilities:'
         for ut in self.RequiredUtilities():
             ans = self.HaveExecutable(ut)
