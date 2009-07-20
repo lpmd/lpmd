@@ -30,6 +30,8 @@ Application::Application(const std::string & appname, const std::string & cmd, U
 {
  simulation = 0;
  inputfile_stream = 0;
+ indexbuffer = 0;
+ old_atoms_size = -1;
  GlobalSession.AssignParameter("debug", "none");
  srand48(long(time(NULL)));
 }
@@ -37,6 +39,7 @@ Application::Application(const std::string & appname, const std::string & cmd, U
 Application::~Application() 
 { 
  if (inputfile_stream != 0) delete inputfile_stream;
+ if (indexbuffer != 0) delete [] indexbuffer;
 }
 
 int Application::Run()
@@ -222,7 +225,19 @@ void Application::UpdateAtomicIndices()
 {
  Tag indextag("index");
  BasicParticleSet & atoms = simulation->Atoms();
- for (long int i=0;i<atoms.Size();++i) atoms.SetTag(atoms[i], indextag, i);
+ if (atoms.Size() != old_atoms_size) 
+ {
+  delete [] indexbuffer;
+  indexbuffer = new std::string[atoms.Size()];
+  old_atoms_size = atoms.Size();
+  for (long int i=0;i<atoms.Size();++i)
+  {
+   std::ostringstream buf;
+   buf << i;
+   indexbuffer[i] = buf.str();
+  }
+ }
+ for (long int i=0;i<atoms.Size();++i) atoms.SetTag(atoms[i], indextag, const_cast<const std::string&>(indexbuffer[i]));
 }
 
 void Application::AdjustAtomProperties()

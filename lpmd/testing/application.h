@@ -54,6 +54,8 @@ class Application
  protected:
    const std::string name;
    const std::string cmdname;
+   std::string * indexbuffer;
+   long int old_atoms_size;
    PluginManager pluginmanager;
    UtilityControl & innercontrol;
    Simulation * simulation;

@@ -23,7 +23,9 @@ void ReplayIntegrator::Advance(Simulation & sim, Potential & pot)
 { 
  if (cellreader != 0)
  {
-  sim.Atoms().Clear();
+  BasicParticleSet & atoms = sim.Atoms();
+  for (long int i=0;i<atoms.Size();++i) atoms.RemoveTags(atoms[i]);
+  atoms.Clear();
   bool status = cellreader->ReadCell(inputstream, sim);
   if (! status) throw RuntimeError("No more configurations to read");
  }
