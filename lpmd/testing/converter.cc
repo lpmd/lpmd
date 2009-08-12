@@ -41,7 +41,9 @@ void Converter::Iterate()
  }
  while (true)
  {
-  std::cerr << "-> Processing configuration " << simulation->CurrentStep() << '\n';
+  if (bool(control["verbose"])) std::cerr << "-> Processing configuration " << simulation->CurrentStep() << '\n';
+  else std::cerr << "-> Processing configuration " << simulation->CurrentStep() << "                     \r";
+  std::cerr.flush();
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
   ApplyPrepares();
@@ -64,5 +66,5 @@ Converter::Converter(int argc, const char * argv[]): Application("LPMD Converter
 
 Converter::~Converter()
 {
- std::cerr << "-> Done.\n";
+ std::cerr << "\n-> Done.\n";
 }
