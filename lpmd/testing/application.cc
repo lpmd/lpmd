@@ -19,6 +19,7 @@
 #include <lpmd/storedvalue.h>
 #include <lpmd/value.h>
 #include <lpmd/session.h>
+#include <lpmd/refparticleset.h>
 
 #include <iostream>
 #include <fstream>
@@ -289,14 +290,42 @@ void Application::ApplyFilters()
  for (int p=0;p<filters.Size();++p)
  {
   std::string id = "filter"+ToString(p+1);
-  SystemFilter & sfilt = CastModule<SystemFilter>(pluginmanager[id]);
-  if (name == "LPMD") pluginmanager[id].Show(std::cout);
-  Cell original_cell(simulation->Cell());
+  Plugin & rawmodule = pluginmanager[id];
+  SystemFilter & sfilt = CastModule<SystemFilter>(rawmodule);
+  if (name == "LPMD") rawmodule.Show(std::cout);
   bool inverse = false;
   if (pluginmanager[id].Defined("inverse") && (bool(pluginmanager[id]["inverse"]))) inverse = true;
   sfilt.inverted = inverse;
-  sfilt.Apply(*simulation);
-  if (simulation->Cell() != original_cell) simulation->RescalePositions(original_cell);
+  if ((rawmodule.Defined("filterby")) && (rawmodule["filterby"] != "none")) 
+  { 
+   GlobalSession.DebugStream() << "-> Applying implicit filter on " << rawmodule.Name() << '\n';
+   GlobalSession.DebugStream() << "-> Filtered plugin details:\n";
+   rawmodule.Show(GlobalSession.DebugStream());
+   Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
+   GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
+   filtering_plugin.Show(GlobalSession.DebugStream());
+   Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
+   bool inverse2 = false;
+   if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse2 = true;
+   //
+   // FIXME: modificar el API para que esta operacion no sea tan engorrosa!!
+   //
+   simulation->ApplyAtomMask(selector, inverse2); 
+   BasicParticleSet & atoms = simulation->Atoms();
+   Selector<BasicParticleSet> & selector2 = sfilt.CreateSelector();
+   ParticleSet * filtered = 0;
+   bool inverted = bool(rawmodule["inverse"]);
+   if (!inverted) filtered = new ParticleSet(selector2.SelectFrom(atoms));
+   else filtered = new ParticleSet(selector2.InverseSelectFrom(atoms));
+   simulation->RemoveAtomMask();
+   simulation->Atoms().Clear();
+   for (long int i=0;i<filtered->Size();++i) simulation->Atoms().Append((*filtered)[i]);
+   delete filtered;
+   //
+   //
+   //
+  }
+  else sfilt.Apply(*simulation);
  }
 }
 

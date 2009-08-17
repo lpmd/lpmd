@@ -120,7 +120,7 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
 {
  Map & params = (*this);
  ModuleInfo module_info("", "", ""); //FIXME: mejor constructor!
- if (((name == "input") || (name == "prepare")) || ((name == "filter") || (name == "output")))
+ if (((name == "input") || (name == "prepare")) || (name == "output"))
  {
   impl->modulecounter[name]++;
   std::string tmp = ParseCommandArguments(params, name, "module ");
@@ -137,6 +137,41 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
   impl->plugins.Append(module_info);
   params.Remove(name+"-module");
   return 0;
+ }
+ else if (name == "filter")
+ {
+  Array<std::string> st_words = StringSplit(full_statement);
+  int over_pos = st_words.Find("over");
+  if (over_pos > 0)
+  {
+   std::string main_statement = "";
+   for (int i=0;i<over_pos;++i) main_statement += (st_words[i]+" ");
+   main_statement += ("filterby=implicitfilter"+ToString(impl->implfilter_count));
+   std::string impl_filter = ("implicitfilter id=implicitfilter"+ToString(impl->implfilter_count)+" module=");
+   for (int i=over_pos+1;i<st_words.Size();++i) impl_filter += (st_words[i]+" ");
+   impl->implfilter_count++;
+   ReadLine(impl_filter);
+   ReadLine(main_statement);
+   return 0;
+  }
+  else
+  {
+   impl->modulecounter[name]++;
+   std::string tmp = ParseCommandArguments(params, name, "module ");
+   std::string validkeywords = (impl->pluginmanager)->GetPluginKeywords(params[name+"-module"]);
+   std::string args = ParseCommandArguments(params, name, validkeywords);
+   params[name+"-modules"] += (params[name+"-module"]+" ");
+   module_info.name = params[name+"-module"];
+   module_info.id = name+ToString(impl->modulecounter[name]);
+   module_info.args = args;
+
+   // Load the plugin
+   (impl->pluginmanager)->LoadPlugin(module_info);
+   //
+   impl->plugins.Append(module_info);
+   params.Remove(name+"-module");
+   return 0;
+  }
  }
  else if (name == "implicitfilter")
  {
