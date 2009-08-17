@@ -322,9 +322,12 @@ class Directory(dict):
               mf += ('\t%s --prefix=%s\n\n' % (setuppath, self.setup.prefix))
            mf += 'install: $(TARGETS)\n'
         pathlist = uniquelist([self[t].installpath for t in self.sortedtargets if hasattr(self[t], 'installpath')])
-        mf += '\n'
+        #mf += '\n'
+        uninstall_files, uninstall_dirs = [], []
         for p in pathlist:
+            # INSTALL: creating an installation directory 
             mf += ('\t%s -v -d %s\n' % (self.setup.install, p))
+            uninstall_dirs.append(p)
         mf += '\n'
         ldconfig_libs = []
         for t in self.sortedtargets:
@@ -333,16 +336,31 @@ class Directory(dict):
                if self[t].targettype == 'headers': realtarget = self[t].sources
                elif hasattr(self[t], 'installname'): realtarget = [ self[t].installname ]
                for rt in realtarget:
+                  # INSTALL: file installation
                   mf += ('\t%s -v -D %s %s\n' % (self.setup.install, rt, self[t].installpath))
+                  uninstall_files.append(os.path.join(self[t].installpath, rt))
                if hasattr(self[t], 'installname') and self[t].installname != t:
+                  # INSTALL: alternative name installation
                   mf += ('\t%s %s %s\n' % ('cp -vd', t, self[t].installpath))
+                  uninstall_files.append(os.path.join(self[t].installpath, t))
                if hasattr(self[t], 'semiinstallname') and self[t].semiinstallname != t:
+                  # INSTALL: alternative name installation
                   mf += ('\t%s %s %s\n' % ('cp -vd', self[t].semiinstallname, self[t].installpath))
+                  uninstall_files.append(os.path.join(self[t].installpath, self[t].semiinstallname))
                if self[t].targettype == 'library' and self[t].installpath not in ldconfig_libs:
                   ldconfig_libs.append(self[t].installpath)
         if self.setup.platform == 'linux':
            for ld in ldconfig_libs: mf += ('\t%s -n %s\n' % (self.setup.actualpath['ldconfig'], ld))
         mf += '\n'
+        #
+        #  'uninstall' target
+        #
+        if len(subdirs) > 0: mf += '\nuninstall: subdirs-uninstall\n'
+        else: mf += '\nuninstall:\n'
+        for x in uninstall_files: mf += ('\trm -vf %s\n' % x)
+        for x in uninstall_dirs: mf += ('\t(rmdir %s || true) 2>/dev/null\n' % x)
+        mf += '\n'
+        #
         objects = []
         for t in self.sortedtargets: 
             dependencies = self[t].sources
@@ -427,6 +445,7 @@ class Directory(dict):
               makefile.AddPhonyTarget('check', checktargets, [('- ./'+x) for x in checktargets])
            makefile.AddPhonyTarget('subdirs-clean', [], [('cd %s && $(MAKE) clean' % d) for d in subdirs])
            makefile.AddPhonyTarget('clean', ['subdirs-clean'], 'rm -f $(TARGETS) %s' % (' '.join(objects)))
+           makefile.AddPhonyTarget('subdirs-uninstall', [], [('cd %s && $(MAKE) uninstall' % d) for d in subdirs])
         else:
            makefile.AddPhonyTarget('check', checktargets, [('- ./'+x) for x in checktargets])
            makefile.AddPhonyTarget('clean', [], 'rm -f $(TARGETS) %s' % (' '.join(cleanables)))
@@ -482,7 +501,7 @@ class SetupHandler:
            librarySemiNamePattern = '%(name)s.%(extension)s.%(major)d'
            libraryExtensions = ['a', 'so']
            librarySharedFlags = ' -shared '
-           librarySharedLinkerFlags = ' -shared -Wl,-export-dynamic -Wl,-soname,%(shortname)s.%(major)d -o %(output)s'
+           librarySharedLinkerFlags = ' -shared -Wl,-export-dynamic -Wl,-soname,%(shortname)s.%(major)d'
            moduleSharedFlags = ' -fPIC -shared '
            moduleSharedLinkerFlags = ' -fPIC -shared '
            languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
@@ -602,7 +621,7 @@ class SetupHandler:
                 if hasattr(self.directory[d][t], 'pkgconfig') and self.directory[d][t].pkgconfig != '':
                    if 'pkg-config' not in utilitylist: utilitylist.append('pkg-config')
                 if self.platform == 'linux' and self.directory[d][t].targettype == 'library': 
-                   utilitylist.append('ldconfig')
+                   if 'ldconfig' not in utilitylist: utilitylist.append('ldconfig')
         return utilitylist
 
     def HaveExecutable(self, ex): 
@@ -712,6 +731,13 @@ def ExpandVariables(d):
     for key in d: buffer = buffer.replace('$('+key+')', d[key])
     sys.stdout.write(buffer)
 
+def ShowHelp():
+    sys.stdout.write('Usage: setup [OPTIONS]\n\n')
+    sys.stdout.write('\t--help\n')
+    sys.stdout.write('\t--prefix=<dir>\n')
+    sys.stdout.write('\t--openmp\n')
+    sys.stdout.write('\t--platform=<platform>\n')
+
 #
 #
 #
@@ -719,6 +745,7 @@ if __name__ == '__main__':
    try:
       opt = OptionParser(sys.argv)
       if 'expand' in opt: ExpandVariables(dict([x.split('=') for x in opt['expand'].split(',')]))
+      elif 'help' in opt: ShowHelp()
       else: SetupHandler('packagesetup', opt).Setup()
    except Exception, e: 
       print '\n', e
