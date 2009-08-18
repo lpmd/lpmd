@@ -47,8 +47,16 @@ void Converter::Iterate()
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
   ApplyPrepares();
-  ApplyFilters();
-  RunModifiers();
+  if (innercontrol["filter-end"] == "true")
+  {
+   RunModifiers();
+   ApplyFilters();
+  } 
+  else
+  {
+   ApplyFilters();
+   RunModifiers();
+  }
   RunVisualizers();
   SaveCurrentConfiguration();
   if (inputfile_stream == 0) break;

@@ -41,7 +41,7 @@ int Visualizer::Run()
  AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
- ApplyFilters();
+ if (innercontrol["filter-end"] == "false") ApplyFilters();
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
@@ -66,9 +66,17 @@ void Visualizer::Iterate()
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
   ApplyPrepares();
-  ApplyFilters();
+  if (innercontrol["filter-end"] == "true")
+  {
+   RunModifiers();
+   ApplyFilters();
+  } 
+  else
+  {
+   ApplyFilters();
+   RunModifiers();
+  }
   if (control.Defined("delay")) usleep(long(double(control["delay"])*1000000.0));
-  RunModifiers();
   RunVisualizers();
   if (inputfile_stream == 0) break;
   try { simulation->DoStep(); }

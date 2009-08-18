@@ -53,7 +53,7 @@ int Application::Run()
  AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
- ApplyFilters();
+ if (innercontrol["filter-end"] == "false") ApplyFilters();
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
@@ -325,7 +325,11 @@ void Application::ApplyFilters()
    //
    //
   }
-  else sfilt.Apply(*simulation);
+  else 
+  { 
+   rawmodule.Show(GlobalSession.DebugStream());
+   sfilt.Apply(*simulation); 
+  }
  }
 }
 

@@ -54,6 +54,7 @@ UtilityControl::UtilityControl(PluginManager & pm)
  params["cell-scale"] = "1.0";
  params["replacecell"] = "false";
  params["optimize-simulation"] = "true";
+ params["filter-end"] = "false";
 }
 
 UtilityControl::~UtilityControl() { delete impl; }
