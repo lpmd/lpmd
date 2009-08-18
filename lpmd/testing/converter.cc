@@ -46,7 +46,6 @@ void Converter::Iterate()
   std::cerr.flush();
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
-  ApplyPrepares();
   if (innercontrol["filter-end"] == "true")
   {
    RunModifiers();

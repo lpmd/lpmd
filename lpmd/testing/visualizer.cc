@@ -65,7 +65,6 @@ void Visualizer::Iterate()
  {
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
-  ApplyPrepares();
   if (innercontrol["filter-end"] == "true")
   {
    RunModifiers();

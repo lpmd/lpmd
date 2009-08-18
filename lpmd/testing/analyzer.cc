@@ -104,7 +104,6 @@ void Analyzer::Iterate()
   std::cerr.flush();
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
   UpdateAtomicIndices();
-  ApplyPrepares();
   ApplyFilters();
   ComputeProperties();
   if (inputfile_stream == 0) break;
