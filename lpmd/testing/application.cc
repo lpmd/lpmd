@@ -54,6 +54,11 @@ int Application::Run()
  SetPotentials();
  ApplyPrepares();
  if (innercontrol["filter-end"] == "false") ApplyFilters();
+ else 
+ {
+  RunModifiers();
+  ApplyFilters();
+ }
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
