@@ -197,6 +197,9 @@ void Application::FillAtoms()
  cg.Generate(*simulation);
  if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
  else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
+ simulation->Cell().Periodicity(0) = bool(innercontrol["periodic-x"]); 
+ simulation->Cell().Periodicity(1) = bool(innercontrol["periodic-y"]); 
+ simulation->Cell().Periodicity(2) = bool(innercontrol["periodic-z"]); 
 }
 
 void Application::FillAtomsFromCellReader()
@@ -219,6 +222,10 @@ void Application::FillAtomsFromCellReader()
  }
  if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
  else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
+ // Assign periodicity
+ simulation->Cell().Periodicity(0) = bool(innercontrol["periodic-x"]); 
+ simulation->Cell().Periodicity(1) = bool(innercontrol["periodic-y"]); 
+ simulation->Cell().Periodicity(2) = bool(innercontrol["periodic-z"]); 
 }
 
 void Application::OptimizeSimulationAtStart()
