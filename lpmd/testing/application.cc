@@ -356,7 +356,7 @@ void Application::SetPotentials()
   Plugin & plugin = pluginmanager[innercontrol.Potentials()[pkeys[p]]];
   Potential & pot = CastModule<Potential>(plugin);
   int spc1 = ElemNum(SplitSpeciesPair(pkeys[p])[0]);
-  int spc2 = ElemNum(SplitSpeciesPair(pkeys[p])[0]);
+  int spc2 = ElemNum(SplitSpeciesPair(pkeys[p])[1]);
   pot.SetValidSpecies(spc1, spc2);
   potentials.Append(pot);
   if (name == "LPMD") plugin.Show(std::cout);
