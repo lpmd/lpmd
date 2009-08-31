@@ -381,37 +381,53 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
  Array<std::string> modules = StringSplit(control[kind+"-modules"]);
  for (int p=0;p<modules.Size();++p)
  {
-  Module & rawmodule = pluginmanager[modules[p]];
-  T & mod = CastModule<T>(rawmodule);
-  if (mod.IsActiveInStep(currentstep)) 
+  try
   {
-   if ((rawmodule.Defined("filterby")) && (rawmodule["filterby"] != "none")) 
-   { 
-    GlobalSession.DebugStream() << "-> Applying implicit filter on " << modules[p] << '\n';
-    GlobalSession.DebugStream() << "-> Filtered plugin details:\n";
-    rawmodule.Show(GlobalSession.DebugStream());
-    Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
-    GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
-    filtering_plugin.Show(GlobalSession.DebugStream());
-    Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
-    bool inverse = false;
-    if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse = true;
-    simulation.ApplyAtomMask(selector, inverse); 
-    Cell original_cell(simulation.Cell());
-    if ((mod.end == -1) && control.Defined("steps-number")) mod.end = int(control["steps-number"]);
-    mod.Apply(simulation);
-    if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
-    simulation.RemoveAtomMask();
-   }
-   else
+   Module & rawmodule = pluginmanager[modules[p]];
+   T & mod = CastModule<T>(rawmodule);
+   if (mod.IsActiveInStep(currentstep)) 
    {
-    Cell original_cell(simulation.Cell());
-    if ((mod.end == -1) && control.Defined("steps-number")) mod.end = int(control["steps-number"]);
-    mod.Apply(simulation);
-    if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
+    if ((rawmodule.Defined("filterby")) && (rawmodule["filterby"] != "none")) 
+    { 
+     GlobalSession.DebugStream() << "-> Applying implicit filter on " << modules[p] << '\n';
+     GlobalSession.DebugStream() << "-> Filtered plugin details:\n";
+     rawmodule.Show(GlobalSession.DebugStream());
+     Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
+     GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
+     filtering_plugin.Show(GlobalSession.DebugStream());
+     Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
+     bool inverse = false;
+     if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse = true;
+     simulation.ApplyAtomMask(selector, inverse); 
+     Cell original_cell(simulation.Cell());
+     if ((mod.end == -1) && control.Defined("steps-number")) mod.end = int(control["steps-number"]);
+     try { mod.Apply(simulation); }
+     catch (MissingComponent & )
+     {
+      // A stepper has thrown MissingComponent, it must be destroyed before schedule
+      pluginmanager.UnloadPlugin(modules[p]);
+      continue;
+     }
+     if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
+     simulation.RemoveAtomMask();
+    }
+    else
+    {
+     Cell original_cell(simulation.Cell());
+     if ((mod.end == -1) && control.Defined("steps-number")) mod.end = int(control["steps-number"]);
+     try { mod.Apply(simulation); }
+     catch (MissingComponent &) 
+     {
+      // A stepper has thrown MissingComponent, it must be destroyed before schedule
+      pluginmanager.UnloadPlugin(modules[p]);
+      continue;
+     }
+     if (simulation.Cell() != original_cell) simulation.RescalePositions(original_cell);
+    }
    }
   }
- }
+  catch (InvalidRequest &) { continue; } // A stepper was unloaded 'on the fly', skip it
+ } 
 }
 
 void Application::RunModifiers() { ApplySteppers<SystemModifier>(pluginmanager, innercontrol, *simulation, "apply"); }
