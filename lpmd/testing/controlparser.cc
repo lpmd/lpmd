@@ -73,6 +73,7 @@ void UtilityControl::Read(std::istream & istr, const ParamList & options, const 
 
 int UtilityControl::OnRegularStatement(const std::string & name, const std::string & keywords)
 {
+ assert(&keywords != 0);//icc 869
  ParamList & params = (*this);
  if (name == "cell")
  {

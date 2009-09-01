@@ -21,6 +21,7 @@ ReplayIntegrator::ReplayIntegrator(Plugin & inpplugin, std::istream & inpstream)
 
 void ReplayIntegrator::Advance(Simulation & sim, Potential & pot) 
 { 
+ assert(&pot != 0);//icc 869
  if (cellreader != 0)
  {
   BasicParticleSet & atoms = sim.Atoms();
