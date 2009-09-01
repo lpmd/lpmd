@@ -15,6 +15,7 @@
 #include <lpmd/property.h>
 #include <lpmd/storedvalue.h>
 #include <lpmd/value.h>
+#include <lpmd/session.h>
 
 #include <fstream>
 
@@ -34,11 +35,27 @@ int main(int argc, const char * argv[])
 
 void LPMD::FillAtoms() 
 {
- Application::FillAtoms();
+ if (control.Defined("restore-file")) RestoreSimulation();
+ else Application::FillAtoms();
  PrintBanner("CELL MANAGER");
  pluginmanager[control["cellmanager-module"]].Show(std::cout);
  PrintBanner("INITIAL CONFIGURATION");
  simulation->ShowInfo(std::cout);
+}
+
+void LPMD::RestoreSimulation()
+{
+ if (name == "LPMD") 
+ {
+  PrintBanner("RESTORE INFORMATION"); 
+  std::cout << "Restoring from dump file: " << control["restore-file"] << '\n';
+  simulation->Restore(control["restore-file"]);
+ }
+ if (bool(innercontrol["optimize-simulation"])) OptimizeSimulationAtStart();
+ else GlobalSession.DebugStream() << "-> NOT optimizing simulation, by user request\n";
+ simulation->Cell().Periodicity(0) = bool(innercontrol["periodic-x"]); 
+ simulation->Cell().Periodicity(1) = bool(innercontrol["periodic-y"]); 
+ simulation->Cell().Periodicity(2) = bool(innercontrol["periodic-z"]); 
 }
 
 void LPMD::Iterate()
@@ -64,8 +81,15 @@ void LPMD::Iterate()
  Timer timer;
  timer.Start();
  long nsteps = int(control["steps-number"]);
+ //
+ // Initialize dumper Stepper
+ //
+ if (control.Defined("dumping-each")) 
+    dumper = Stepper(0, nsteps, int(control["dumping-each"]));
+ // 
+ //
  PrintBanner("SIMULATION STARTED"); 
- for (long i=0;i<nsteps;++i)
+ for (long i=simulation->CurrentStep();i<nsteps;++i)
  {
   UpdateAtomicIndices();
   for (int k=0;k<atoms.Size();++k) atoms[k].Acceleration() = Vector(0.0, 0.0, 0.0);
@@ -74,6 +98,8 @@ void LPMD::Iterate()
   ComputeProperties();
   RunVisualizers();
   if (control.Defined("extraverbose")) simulation->ShowInfo(std::cout);
+  if (control.Defined("dumping-each") && (dumper.IsActiveInStep(simulation->CurrentStep()))) 
+     simulation->Dump(control["dumping-file"]);
   SaveCurrentConfiguration();
  }
 

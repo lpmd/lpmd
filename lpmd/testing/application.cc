@@ -52,7 +52,7 @@ int Application::Run()
  FillAtoms();
  AdjustAtomProperties();
  SetPotentials();
- ApplyPrepares();
+ if (! innercontrol.Defined("restore-file")) ApplyPrepares(); // do not run if restoring simulation 
  if (innercontrol["filter-end"] == "false") ApplyFilters();
  else 
  {
