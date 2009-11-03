@@ -7,6 +7,8 @@
 #include <lpmd/array.h>
 #include <lpmd/util.h>
 #include <lpmd/property.h>
+#include <lpmd/systemmodifier.h>
+#include <lpmd/visualizer.h>
 #include "controlparser.h"
 
 class UControlImpl
@@ -217,9 +219,46 @@ int UtilityControl::OnNonRegularStatement(const std::string & name, const std::s
    std::string args = ParseCommandArguments(params, name, validkeywords);
    for (int q=0;q<impl->plugins.Size();++q)
    {
-    if (impl->plugins[q].id == params[name+"-module"]) 
+    if (impl->plugins[q].id == params[name+"-module"])
     {
      impl->plugins[q].args += (" "+args);
+     // Test the plugin for the correct cast (property, apply or visualize)
+     if (name == "property")
+     {
+      try
+      {
+       InstantProperty & ip = CastModule<InstantProperty>((*(impl->pluginmanager))[params[name+"-module"]]);
+       assert(&ip != 0);
+      }
+      catch (Error & e) 
+      {
+       try
+       {
+        TemporalProperty & tp = CastModule<TemporalProperty>((*(impl->pluginmanager))[params[name+"-module"]]);
+        assert(&tp != 0);
+       }
+       catch (Error & e) { throw InvalidOperation("Using the "+params[name+"-module"]+" plugin with the \'property\' statement"); }
+      }
+     }
+     else if (name == "apply")
+     {
+      try
+      {
+       SystemModifier & sm = CastModule<SystemModifier>((*(impl->pluginmanager))[params[name+"-module"]]);
+       assert(&sm != 0);
+      }
+      catch (Error & e) { throw InvalidOperation("Using the "+params[name+"-module"]+" plugin with the \'apply\' statement"); }
+     }
+     else if (name == "visualize")
+     {
+      try
+      {
+       Visualizer & vi = CastModule<Visualizer>((*(impl->pluginmanager))[params[name+"-module"]]);
+       assert(&vi != 0);
+      }
+      catch (Error & e) { throw InvalidOperation("Using the "+params[name+"-module"]+" plugin with the \'visualize\' statement"); }
+     }
+     // 
      (impl->pluginmanager)->UpdatePlugin(params[name+"-module"], impl->plugins[q].args); 
      Plugin & plugin = (*(impl->pluginmanager))[impl->plugins[q].id];
      if (int(plugin["each"]) == 0)
