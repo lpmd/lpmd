@@ -103,6 +103,11 @@ void Analyzer::Iterate()
   else std::cerr << "-> Processing configuration " << simulation->CurrentStep() << "                     \r";
   std::cerr.flush();
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
+  try
+  { 
+   simulation->GetCellManager().UpdateCell(*simulation);
+  }
+  catch (Error & e) { } // FIXME: Chequear de mejor manera la presencia del cellmanager 
   UpdateAtomicIndices();
   ApplyFilters();
   ComputeProperties();

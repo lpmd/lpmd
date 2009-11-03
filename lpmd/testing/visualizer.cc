@@ -64,6 +64,11 @@ void Visualizer::Iterate()
  while (true)
  {
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
+  try
+  {
+   simulation->GetCellManager().UpdateCell(*simulation);
+  }
+  catch (Error & e) { } // FIXME: Chequear de mejor manera la presencia del cellmanager 
   UpdateAtomicIndices();
   if (innercontrol["filter-end"] == "true")
   {
