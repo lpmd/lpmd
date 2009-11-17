@@ -23,6 +23,7 @@ QuickModeParser::QuickModeParser(const std::string & use_hint)
  DefineOption("option", "O", "keywordvalue");
  DefineOption("replace-cell", "r", "");
  DefineOption("lengths", "L", "a,b,c");
+ DefineOption("periodic", "P", "px,py,pz");
  DefineOption("angles", "A", "alpha,beta,gamma");
  DefineOption("vector", "V", "ax,ay,az,bx,by,bz,cx,cy,cz");
  DefineOption("scale", "S", "value");
@@ -112,6 +113,12 @@ std::string QuickModeParser::FormattedAsControlFile() const
    if (angles.Size() == 3) cellstatement += " alpha="+angles[0]+" beta="+angles[1]+" gamma="+angles[2];
    else throw SyntaxError("Only three arguments are supported with -A");
   }
+ }
+ if (Defined("periodic")) 
+ {
+  Array<std::string> p_array = StringSplit((*this)["periodic-px,py,pz"], ',');
+  assert(p_array.Size() == 3);
+  control += ("periodic "+p_array[0]+" "+p_array[1]+" "+p_array[2]+"\n");
  }
  if (Defined("scale-value")) cell_scale = (*this)["scale-value"];
  if (cellstatement != "") control += (cellstatement+" scale="+cell_scale+"\n");
