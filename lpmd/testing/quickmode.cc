@@ -40,7 +40,23 @@ Array<std::string> ParseModuleFlags(const std::string & optflags)
 {
  Array<std::string> opt = StringSplit(optflags, ':');
  if (opt.Size() < 2) return Array<std::string>();
- else return StringSplit(opt[1], ',');
+ else 
+ {
+  Array<std::string> values = FindBetween(opt[1]);
+  Array<std::string> args = StringSplit(opt[1],',');
+  for (long i=0;i<args.Size();++i)
+  {
+   size_t p;
+   p = args[i].find_first_of("%");
+   if (p != std::string::npos)
+   {
+    std::string sub = args[i].substr(p,args[i].size()-p);
+    int l=atoi(sub.c_str());
+    args[i].replace(p,args[i].size()-p,values[l]);
+   }
+  }
+  return args;
+ }
 }
 
 std::string ParseModuleLoading(const std::string & optflags)

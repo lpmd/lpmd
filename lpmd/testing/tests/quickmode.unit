@@ -113,6 +113,16 @@
 }
 @end
 
+@test Quotes protecting parameters
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-i", "vasp:file=POSCAR,species=\"Ti,Ga,N\"" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "input module=vasp file=POSCAR species=Ti,Ga,N\n"
+}
+@end
+
 @test Output
 {
  QuickModeParser qmp("test");
@@ -142,4 +152,5 @@
  @equal control, "use linkedcell\ncutoff 7.0\nnx 7\nny 7\nnz 7\nenduse\ncellmanager linkedcell\n"
 }
 @end
+
 
