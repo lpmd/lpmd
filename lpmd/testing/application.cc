@@ -355,9 +355,15 @@ void Application::SetPotentials()
  {
   Plugin & plugin = pluginmanager[innercontrol.Potentials()[pkeys[p]]];
   Potential & pot = CastModule<Potential>(plugin);
-  int spc1 = ElemNum(SplitSpeciesPair(pkeys[p])[0]);
-  int spc2 = ElemNum(SplitSpeciesPair(pkeys[p])[1]);
-  pot.SetValidSpecies(spc1, spc2);
+  std::string species_a = SplitSpeciesPair(pkeys[p])[0];
+  std::string species_b = SplitSpeciesPair(pkeys[p])[1];
+  if ((species_a != "all") && (species_b != "all"))
+  {
+   int spc1 = ElemNum(species_a);
+   int spc2 = ElemNum(species_b);
+   pot.SetValidSpecies(spc1, spc2);
+  }
+  else pot.SetValidSpecies(-1, -1); // wildcard meaning "all species"
   potentials.Append(pot);
   if (name == "LPMD") plugin.Show(std::cout);
  } 
