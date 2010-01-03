@@ -188,6 +188,9 @@ void Application::ConstructSimulation()
 
 void Application::FillAtoms()
 {
+ Module & inputmodule = pluginmanager["input1"];
+ if (bool(innercontrol["replacecell"])) inputmodule["replacecell"] = "true";
+ else inputmodule["replacecell"] = "false";
  CellGenerator & cg = CastModule<CellGenerator>(pluginmanager["input1"]);
  if (name == "LPMD") 
  {
