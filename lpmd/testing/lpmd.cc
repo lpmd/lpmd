@@ -103,6 +103,7 @@ void LPMD::Iterate()
   SaveCurrentConfiguration();
  }
 
+ simulation->Dump(control["lastconfig"]);
  timer.Stop();
  PrintBanner("SIMULATION FINISHED"); 
  timer.ShowElapsedTimes();

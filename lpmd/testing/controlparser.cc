@@ -55,6 +55,7 @@ UtilityControl::UtilityControl(PluginManager & pm)
  params["periodic-z"] = "true";
  params["cell-scale"] = "1.0";
  params["replacecell"] = "false";
+ params["lastconfig"] = "lastconfig.dump";
  params["optimize-simulation"] = "true";
  params["filter-end"] = "false";
 }
