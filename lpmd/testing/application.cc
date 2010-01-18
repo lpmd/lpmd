@@ -32,6 +32,7 @@ Application::Application(const std::string & appname, const std::string & cmd, U
  simulation = 0;
  inputfile_stream = 0;
  indexbuffer = 0;
+ replay = 0;
  old_atoms_size = -1;
  GlobalSession.AssignParameter("debug", "none");
  srand48(long(time(NULL)));
@@ -41,6 +42,7 @@ Application::~Application()
 { 
  if (inputfile_stream != 0) delete inputfile_stream;
  if (indexbuffer != 0) delete [] indexbuffer;
+ if (replay != 0) delete replay;
 }
 
 int Application::Run()
@@ -216,7 +218,9 @@ void Application::FillAtomsFromCellReader()
   GlobalSession.DebugStream() << "-> Reading input file: " << inputmodule["file"] << '\n';
   inputfile_stream = new std::ifstream(inputmodule["file"].c_str());
   cellreader.ReadHeader(*inputfile_stream);
-  cellreader.ReadCell(*inputfile_stream, *simulation);
+  if (innercontrol.Defined("replay") && (innercontrol["replay"] == "true")) 
+     PreReadConfigurations();
+  else cellreader.ReadCell(*inputfile_stream, *simulation);
  }
  else
  {
@@ -229,6 +233,17 @@ void Application::FillAtomsFromCellReader()
  simulation->Cell().Periodicity(0) = bool(innercontrol["periodic-x"]); 
  simulation->Cell().Periodicity(1) = bool(innercontrol["periodic-y"]); 
  simulation->Cell().Periodicity(2) = bool(innercontrol["periodic-z"]); 
+}
+
+void Application::PreReadConfigurations()
+{
+ assert(inputfile_stream != 0);
+ Plugin & inputmodule = pluginmanager["input1"];
+ replay = new ReplayIntegrator(inputmodule, *inputfile_stream);
+ replay->start = (inputmodule.Defined("start") ? int(inputmodule["start"]) : 0);
+ replay->end = (inputmodule.Defined("end") ? int(inputmodule["end"]) : -1);
+ replay->each = (inputmodule.Defined("each") ? int(inputmodule["each"]) : 1);
+ replay->PreRead(*simulation);
 }
 
 void Application::OptimizeSimulationAtStart()

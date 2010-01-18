@@ -58,6 +58,8 @@ UtilityControl::UtilityControl(PluginManager & pm)
  params["lastconfig"] = "lastconfig.dump";
  params["optimize-simulation"] = "true";
  params["filter-end"] = "false";
+ params["replay"] = "false";
+ params["loop"] = "false";
 }
 
 UtilityControl::~UtilityControl() { delete impl; }

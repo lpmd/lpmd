@@ -68,14 +68,6 @@ void Analyzer::CheckForTemporalProperties()
  }
 }
 
-void Analyzer::PreReadConfigurations()
-{
- assert(inputfile_stream != 0);
- Plugin & inputmodule = pluginmanager["input1"];
- replay = new ReplayIntegrator(inputmodule, *inputfile_stream);
- replay->PreRead(*simulation);
-}
-
 void Analyzer::ComputeTemporalProperties()
 {
  for (int i=0;i<temporalproperties.Size();++i)
@@ -119,7 +111,6 @@ void Analyzer::Iterate()
 
 Analyzer::Analyzer(int argc, const char * argv[]): Application("LPMD Analyzer", "lpmd-analyzer", control), control(pluginmanager)
 {
- replay = 0;
  std::cerr << "\nLPMD Analyzer, version " << VERSION << "\n\n";
  ProcessControl(argc, argv, "property");
 }
@@ -127,6 +118,5 @@ Analyzer::Analyzer(int argc, const char * argv[]): Application("LPMD Analyzer", 
 Analyzer::~Analyzer()
 { 
  std::cerr << "\n-> Done.\n";
- delete replay; 
 }
 

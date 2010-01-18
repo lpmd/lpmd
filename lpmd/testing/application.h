@@ -11,6 +11,7 @@
 #include <lpmd/simulation.h>
 #include <lpmd/nonorthogonalcell.h>
 #include "controlparser.h"
+#include "replayintegrator.h"
 
 using namespace lpmd;
 
@@ -26,6 +27,7 @@ class Application
    void AutoTestPlugin(const std::string & pluginname);
 
    void FillAtomsFromCellReader();
+   void PreReadConfigurations();
    void UpdateAtomicIndices();
    void ShowApplicableModules(const std::string & kind);
    void RunModifiers();
@@ -63,6 +65,7 @@ class Application
    Array<std::ostream *> propertystream; 
    std::ofstream ** outputstream;
    std::istream * inputfile_stream;
+   ReplayIntegrator * replay;
 };
 
 #endif

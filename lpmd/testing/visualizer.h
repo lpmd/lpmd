@@ -25,6 +25,8 @@ class Visualizer: public Application
    int Run();
    void FillAtoms();
    void Iterate();
+   void IterateSequential();
+   void IterateReplay();
 
  private:
    VisualizerControl control; 
