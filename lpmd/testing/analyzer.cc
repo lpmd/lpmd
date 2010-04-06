@@ -38,7 +38,7 @@ int Analyzer::Run()
  AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
- ApplyFilters();
+ // ApplyFilters(); # FIXME tambien filter de mas en caso de multiples configs
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
