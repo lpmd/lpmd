@@ -42,7 +42,7 @@ int Visualizer::Run()
  AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
- if (innercontrol["filter-end"] == "false") ApplyFilters();
+ // if (innercontrol["filter-end"] == "false") ApplyFilters();
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
