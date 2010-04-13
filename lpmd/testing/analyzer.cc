@@ -101,7 +101,16 @@ void Analyzer::Iterate()
   }
   catch (Error & e) { } // FIXME: Chequear de mejor manera la presencia del cellmanager 
   UpdateAtomicIndices();
-  ApplyFilters();
+  if (innercontrol["filter-end"] == "true")
+  {
+   RunModifiers();
+   ApplyFilters();
+  } 
+  else
+  {
+   ApplyFilters();
+   RunModifiers();
+  }
   ComputeProperties();
   if (inputfile_stream == 0) break;
   try { simulation->DoStep(); }
