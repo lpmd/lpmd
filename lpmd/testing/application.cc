@@ -27,7 +27,7 @@
 
 using namespace lpmd;
 
-Application::Application(const std::string & appname, const std::string & cmd, UtilityControl & uc): name(appname), cmdname(cmd), innercontrol(uc)
+Application::Application(const std::string & appname, const std::string & cmd, UtilityControl & uc): innercontrol(uc), name(appname), cmdname(cmd) 
 {
  simulation = 0;
  inputfile_stream = 0;

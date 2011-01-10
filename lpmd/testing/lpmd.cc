@@ -24,6 +24,12 @@ int main(int argc, const char * argv[])
  try
  {
   LPMD main(argc, argv);
+  if (main.innercontrol["filter-end"] == "false") main.ApplyFilters();
+  else 
+  {
+   main.RunModifiers();
+   main.ApplyFilters();
+  }
   return main.Run();
  }
  catch (std::exception & e)

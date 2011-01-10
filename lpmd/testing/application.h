@@ -52,6 +52,8 @@ class Application
    virtual void Iterate();
 
    virtual int Run();
+   
+   UtilityControl & innercontrol;
 
  protected:
    const std::string name;
@@ -59,7 +61,6 @@ class Application
    std::string * indexbuffer;
    long int old_atoms_size;
    PluginManager pluginmanager;
-   UtilityControl & innercontrol;
    Simulation * simulation;
    NonOrthogonalCell cell;
    Array<std::ostream *> propertystream; 
