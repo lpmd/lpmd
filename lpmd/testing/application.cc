@@ -55,16 +55,15 @@ int Application::Run()
  AdjustAtomProperties();
  SetPotentials();
  if (! innercontrol.Defined("restore-file")) ApplyPrepares(); // do not run if restoring simulation 
- // FIXME: Comentado porque aplicaba filtros dos veces en la primera configuracion
- // en el caso de multiples configs. No deberia (chequear!) afectar a analyzer / visualizer
- /*
- if (innercontrol["filter-end"] == "false") ApplyFilters();
- else 
+ if (name == "LPMD")
  {
-  RunModifiers();
-  ApplyFilters();
+  if (innercontrol["filter-end"] == "false") ApplyFilters();
+  else 
+  {
+   RunModifiers();
+   ApplyFilters();
+  }
  }
- */
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
