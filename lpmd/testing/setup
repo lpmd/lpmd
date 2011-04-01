@@ -38,7 +38,7 @@ librarySharedLinkerFlags = None
 moduleSharedFlags = None 
 moduleSharedLinkerFlags = None 
 
-languageFields =  ['flags', 'libraries', 'compiler', 'linker']
+languageFields =  ['flags', 'libraries', 'compiler', 'linker', 'openmpflags']
 targetFields = ['test', 'language', 'sources', 'headers', 'installpath', 'pkgconfig', 'expand', 'version', 'openmp'] + languageFields
 targetKinds = ['binary', 'script', 'library', 'staticlibrary', 'headers', 'module', 'file']
 globaltags = ['name', 'fullname', 'version', 'author', 'prefix', 'openmp', 'mainfirst']

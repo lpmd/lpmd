@@ -9,11 +9,29 @@ author = 'GNM <gnm@gnm.cl>'
 prefix = /usr/local
 
 language c++
-   flags = -g -O3 -ffast-math -funroll-all-loops -Wall -pedantic 
+ifdef intel
+   compiler = icpc
+   linker = icpc -Wall -O3 -axSSE4.1 -openmp -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -lpthread -lguide
+   flags = -Wall -O3 -axSSE4.1 -openmp -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -lpthread -lguide
+   ifdef openmp
+    openmpflags = -openmp
+   endif
+else
+   compiler = g++
+   linker = g++
+   flags = -Wall -O3 -ffast-math -funroll-all-loops -finline-functions -std=gnu++98
+   ifdef openmp
+    openmpflags = -fopenmp
+   endif
+endif
 end
 
 language lpunit
    compiler = lpmaketest
+end
+
+language python
+   compiler = python
 end
 
 directory .
@@ -59,6 +77,11 @@ directory .
        installpath = bin
        pkgconfig += liblpmd-2.0
        libraries += liblpmdutility.a
+    end
+
+    binary lpmd-plotter
+       language = python
+       sources = lpmd-plotter
     end
 end
 
