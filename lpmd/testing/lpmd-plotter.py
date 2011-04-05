@@ -2,7 +2,9 @@
 
 import sys, string
 from lpplotter import *
-
+from lpplotter.makeframes import *
+from lpplotter.povscene import *
+from lpplotter.parselpmd2 import *
 
 
 #
