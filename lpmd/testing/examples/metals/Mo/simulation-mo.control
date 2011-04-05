@@ -1,0 +1,44 @@
+# 31.470/10 = 3.147 = lattice parameter of Mo
+cell crystal 30.270
+input crystal3d type=bcc symbol=Mo nx=10 ny=10 nz=10
+
+output module=lpmd file=mo-output.lpmd level=2 each=50
+monitor step,kinetic-energy,potential-energy,temperature,pressure,density start=0 each=50 end=-1 output=properties.dat
+
+prepare temperature t=50
+
+steps 20000
+
+mass Mo 95.94
+
+#Modules Declaration
+use velocityverlet
+ dt 1.0
+enduse
+
+use finnissinclair-ext as fse
+ c0  47.98066
+ c1 -34.09924
+ c2  5.832293
+ c3  0.017494
+ c4  0.020393
+ A   1.848648
+ B   0.000000
+ c   3.257200
+ d   4.147200
+enduse
+
+use linkedcell 
+ cutoff 7.0 
+ mode auto 
+enduse
+
+use tempscaling
+ from 50.0
+ to 50.0
+enduse
+#Potencial Apply
+potential fse Mo Mo
+integrator velocityverlet
+cellmanager linkedcell
+apply tempscaling start=0 end=10000 each=200

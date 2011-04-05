@@ -19,7 +19,7 @@ ifdef intel
 else
    compiler = g++
    linker = g++
-   flags = -Wall -O3 -ffast-math -funroll-all-loops -finline-functions -std=gnu++98
+   flags = -g -Wall -O3 -ffast-math -funroll-all-loops -finline-functions -std=gnu++98
    ifdef openmp
     openmpflags = -fopenmp
    endif
@@ -81,8 +81,40 @@ directory .
 
     binary lpmd-plotter
        language = python
-       sources = lpmd-plotter
+       sources = lpmd-plotter.py
+       installpath = bin
     end
+
+    binary makeframes.py
+       language = python
+       sources = lpplotter/makeframes.py
+       ifdef prefix
+        installpath = $(prefix)/lib/lpplotter/
+       else
+        installpath = $(PYTHONLIB)/lpplotter/
+       endif
+    end
+
+    binary povscene.py
+       language = python
+       sources = lpplotter/povscene.py
+       ifdef prefix
+        installpath = $(prefix)/lib/lpplotter/
+       else
+        installpath = $(PYTHONLIB)/lpplotter/
+       endif
+    end
+
+    binary parselpmd2.py
+       language = python
+       sources = lpplotter/parselpmd2.py
+       ifdef prefix
+        installpath = $(prefix)/lib/lpplotter/
+       else
+        installpath = $(PYTHONLIB)/lpplotter/
+       endif
+    end
+
 end
 
 directory tests

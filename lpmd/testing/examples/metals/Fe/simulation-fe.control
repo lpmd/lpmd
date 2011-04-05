@@ -1,0 +1,40 @@
+# 28.665/10 = 2.8665 = lattice parameter of Fe
+cell crystal 28.665
+input crystal3d type=bcc symbol=Fe nx=10 ny=10 nz=10
+
+output module=lpmd file=fe-output.lpmd level=2 each=50
+monitor step,kinetic-energy,potential-energy,temperature,pressure start=0 each=50 end=-1 output=properties.dat
+
+prepare temperature t=300
+
+steps 20000
+
+#Modules Declaration
+use velocityverlet
+ dt 1.0
+enduse
+
+use finnissinclair as fs
+ c0  1.2371147 
+ c1 -0.3592185
+ c2 -0.0385607
+ A   1.8289050
+ B   1.8000000
+ c   3.4000000
+ d   3.5697450
+enduse
+
+use linkedcell 
+ cutoff 7.0
+ mode auto 
+enduse
+
+use tempscaling
+ from 300.0
+ to 300.0
+enduse
+#Potencial Apply
+potential fs Fe Fe
+integrator velocityverlet
+cellmanager linkedcell
+apply tempscaling start=0 end=10000 each=200
