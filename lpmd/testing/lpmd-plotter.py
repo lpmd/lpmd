@@ -6,7 +6,7 @@ from lpplotter import *
 
 
 #
-#
+# VERSION 0.1
 #
 
 syntax = { 'input': ('file', 'start=', 'end=', 'each='),
