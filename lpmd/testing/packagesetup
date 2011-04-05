@@ -115,6 +115,15 @@ directory .
        endif
     end
 
+    binary __init__.py
+       language = python
+       sources = lpplotter/__init__.py
+       ifdef prefix
+        installpath = $(prefix)/lib/lpplotter/
+       else
+        installpath = $(PYTHONLIB)/lpplotter/
+       endif
+    end
 end
 
 directory tests
