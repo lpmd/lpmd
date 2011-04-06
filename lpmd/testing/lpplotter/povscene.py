@@ -43,23 +43,30 @@ class Object:
 #
 class Camera(Object):
 
-  def __init__(self, location, direction,camera="perspective",angle="-1",aspect="1.3333"):
+  def __init__(self, location, direction,up="1*y",camera="perspective",angle="-1",aspect="-1.3333",sky="(0,1,0)"):
       self.location = location
       self.direction = direction
       self.aspect = aspect
       self.camera = camera
       self.angle = angle
+      self.up = up
+      self.sky = sky
   
   def GetPOVCode(self):
       povCode = "camera { \n"
       povCode += "  %s \n" % self.camera
       povCode += "  location %s\n" % self.GetCoordPOVCode(self.location)
-      povCode += "  look_at %s\n" % self.GetCoordPOVCode(self.direction)
       if(self.camera!="orthographic" or (self.camera=="orthographic" and float(self.angle)!=-1)):
        povCode += "  up 1*y\n"
        povCode += "  right %s*x\n" % self.aspect
+       povCode += "  sky %s\n" % self.GetCoordPOVCode(self.sky)
+      if(self.camera=="orthographic" and self.up!="1*y"):
+       povCode += "  up %s\n" % self.GetCoordPOVCode(eval(self.up))
+       povCode += "  right %s\n" % self.GetCoordPOVCode(eval(self.aspect))
+       povCode += "  sky %s\n" % self.GetCoordPOVCode(self.sky)
       if (float(self.angle)!=-1):
        povCode += "  angle %f\n" % float(self.angle)
+      povCode += "  look_at %s\n" % self.GetCoordPOVCode(self.direction)
       povCode += "}\n\n"
       return povCode 
 
