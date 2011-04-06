@@ -1,13 +1,12 @@
 # 20.391/5 = 4.0782 = lattice parameter of Au
-cell crystal 20.391
+cell crystal 20.291
 input crystal3d type=fcc symbol=Au nx=5 ny=5 nz=5
 
 output module=lpmd file=au-output.lpmd level=2 each=50
-monitor step,total-energy,temperature,pressure,volume,density,px,py,pz,virial-pressure,kinetic-pressure start=0 each=50 end=-1 output=properties.dat
+monitor step,total-energy,temperature,pressure,density,px,py,pz,virial-pressure,kinetic-pressure start=0 each=50 end=-1 output=properties.dat
 
-prepare temperature t=50
+prepare temperature t=300
 
-mass Au 196.966569 
 
 steps 20000
 
@@ -18,11 +17,11 @@ enduse
 
 use gupta
  A 0.2061
- r0 2.884
+ r0 2.88
  p 10.229
  B 1.79
- q 4.036
- cutoff 6.0
+ qij 4.036
+ cutoff 7.0
 enduse
 
 use linkedcell 
@@ -31,8 +30,8 @@ use linkedcell
 enduse
 
 use tempscaling
- from 50.0
- to 50.0
+ from 300.0
+ to 300.0
 enduse
 #Potencial Apply
 potential gupta Au Au
