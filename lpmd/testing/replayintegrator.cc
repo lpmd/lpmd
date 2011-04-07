@@ -54,9 +54,12 @@ void ReplayIntegrator::Advance(Simulation & sim, Potential & pot)
     GlobalSession.DebugStream() << "-> Read (could not skip) configuration " << nconf << "\n";
    }
    nconf++; 
+   if ((! status) || ((mystepper.end != -1) && (nconf > mystepper.end)))
+      throw RuntimeError("No more configurations to read");
    throw InvalidRequest("skip");
   }
-  if (! status) throw RuntimeError("No more configurations to read");
+  if ((! status) || ((mystepper.end != -1) && (nconf > mystepper.end)))
+     throw RuntimeError("No more configurations to read");
   nconf++;
  }
 }
