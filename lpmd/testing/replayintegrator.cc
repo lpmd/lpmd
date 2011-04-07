@@ -65,7 +65,7 @@ void ReplayIntegrator::PreRead(Simulation & simulation)
 {
  assert(cellreader != 0);
  history.Append(simulation);
- cellreader->ReadMany(inputstream, history, *this, true);
+ cellreader->ReadMany(inputstream, history, mystepper, true);
  GlobalSession.DebugStream() << "-> Read " << history.Size() << " configurations.\n";
 }
 
