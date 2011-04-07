@@ -7,6 +7,13 @@ import sys
 from os import system
 from math import *
 
+####################
+#Global variables###
+####################
+lp = LPMD2()
+c = 1
+option = {'null': 1}
+
 ################
 #DEFINITIONS####
 ################
@@ -21,10 +28,6 @@ def cross(x,y):
  b = x[0]*y[2]-x[2]*y[0]
  c = x[0]*y[1]-x[1]*y[0]
  return (-a,-b,-c)
-#Global variables
-lp = LPMD2()
-c = 1
-option = {'null': 1}
 
 def Movie(formatinput="png"):
     fcode = "" 
@@ -41,16 +44,21 @@ def render(lp, c):
     LY = norma(lp.cell[1])
     LZ = norma(lp.cell[2])
 
-    vec1 = option['cameraLocation']['position']
-    vec2 = option['cameraLookat']['position']
-    lvec = distance(vec1,vec2)
-    mvec = ( (float(vec2[0])-float(vec1[0]))*0.1 , (float(vec2[1])-float(vec1[1]))*0.1 , (float(vec2[2])-float(vec1[2]))*0.8 )
-    lightpos = (mvec[0]+2.0*lvec,mvec[1]+2.0*lvec,mvec[2]+lvec*1.5)
-    cameraLocation = option['cameraLocation']['position'] 
-    cameraUp = option['cameraUp']['position']
-    cameraLookat = option['cameraLookat']['position']
-    lightSource1= lightpos
-    lightSource2= option['cameraLocation']['position']
+    #cp=cameraLocation;cu=cameraUp;cl=cameraLookat;lc=LargeBetweenCLandCP
+    cp = option['cameraLocation']['position'] 
+    cu = option['cameraUp']['position']
+    cl = option['cameraLookat']['position']
+    lc = distance(cp,cl)
+    mvec = ((float(cl[0])-float(cp[0]))*0.5, (float(cl[1])-float(cp[1]))*0.5, (float(cl[2])-float(cp[2]))*0.5)
+    lightpos0 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
+    lightpos1 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
+    lightpos2 = (cl[0]+cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
+    lightpos3 = (cl[0]-cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
+    lightSource0= lightpos0
+    lightSource1= lightpos1
+    lightSource2= lightpos2
+    lightSource3= lightpos3
+    lightSource4= option['cameraLocation']['position']
 
     #aspect negative by left-hand rule
     aspect = -float(float(sizes[0])/float(sizes[1]))
@@ -58,23 +66,31 @@ def render(lp, c):
     camarg = {'camera':str(option['camera']['value'])}
     if("cameraAngle" in option): camarg['angle']=float(option['cameraAngle']['value'])
     if(camarg['camera']=="orthographic"):
-     up = (cameraUp[0]*sizes[1]*0.5,cameraUp[1]*sizes[1]*0.5,cameraUp[2]*sizes[1]*0.5)
-     if (cameraLocation[2]<=0):
-      tmpr1 = cross(up,vdist(vec2,vec1))
+     up = (cu[0]*sizes[1]*0.5,cu[1]*sizes[1]*0.5,cu[2]*sizes[1]*0.5)
+     if (cp[2]<=0):
+      tmpr1 = cross(up,vdist(cl,cp))
      else:
-      tmpr1 = cross(up,vdist(vec1,vec2))
+      tmpr1 = cross(up,vdist(cp,cl))
      tmpr  = vecno(tmpr1)
      right = (tmpr[0]*sizes[0]*0.5,tmpr[1]*sizes[0]*0.5,tmpr[2]*sizes[0]*0.5)
      camarg['up']=str(up)
      camarg['aspect']=str(right)
     if(camarg['camera']=="perspective"):
      camarg['aspect']=aspect
-    camarg['sky']=cameraUp
-    scene.Add(Camera(location=cameraLocation, direction=cameraLookat, **camarg))
+    camarg['sky']=cu
+    if("cameraRotate" in option):
+     val = float(option["cameraRotate"]["value"])*float(c)
+     camarg['rotatepos'] = option["cameraRotate"]["poslook"]
+     camarg['rotatevec'] = option["cameraRotate"]["rotvect"]
+     camarg['rotatefac'] = str(val)
+    scene.Add(Camera(location=cp, direction=cl, **camarg))
 
     scene.SetBackgroundColor("<%f, %f, %f>" % background)
+    scene.AddLight(LightSource(lightSource0, shadowless=False, spot=False))
     scene.AddLight(LightSource(lightSource1, shadowless=False, spot=False))
     scene.AddLight(LightSource(lightSource2, shadowless=False, spot=False))
+    scene.AddLight(LightSource(lightSource3, shadowless=False, spot=False))
+    scene.AddLight(LightSource(lightSource4, shadowless=False, spot=False))
     scene.SetAmbientLight(True)
 
     print "Number of atoms in scene ", c, " is ", len(lp)
@@ -104,12 +120,22 @@ def render(lp, c):
 
 def newrender(lp):
  global c
+ if ("startframes" in option and c==1):
+  for i in range (1,int(option['startframes']['value'])):
+   render (lp,c)
+   c+=1
  render(lp,c)
  c += 1
 def RunRender(o):
  global option
+ global c
  option=o
- lp.ReadInPlace(option['input']['file'],newrender)
+ tmplp = [None]
+ lp.ReadInPlace(option['input']['file'],tmplp,newrender)
+ if ("finalframes" in option):
+  for i in range(1,int(option['finalframes']['value'])):
+   render (tmplp[0],c)
+   c+=1
  if ("movie" in option):
   Movie(formatinput="png")
 

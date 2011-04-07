@@ -20,7 +20,10 @@ syntax = { 'input': ('file', 'start=', 'end=', 'each='),
            'cameraLookat': ('position',),
            'cameraLight':('value',),
            'cameraAngle':('value',),
+           'cameraRotate':('poslook','rotvect','value',),
            'camera':('value',),
+           'startframes':('value',),
+           'finalframes':('value',),
            'look_at': ('direction',),
            'background': ('color',),
            'light1': ('position',),
@@ -81,7 +84,7 @@ def protect_brackets(txt, openbrac, closebrac):
         newtxt += '%'+str(cnt)
         d['%'+str(cnt)] = openbrac+txt[p1+1:p2]+closebrac
         p0, cnt = (p2+1), cnt+1
-    return (newtxt, d)
+    return (newtxt+txt[p2+1:], d)
 
 class SyntaxError(Exception):
 

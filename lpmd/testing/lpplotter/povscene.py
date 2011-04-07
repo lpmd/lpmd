@@ -43,7 +43,7 @@ class Object:
 #
 class Camera(Object):
 
-  def __init__(self, location, direction,up="1*y",camera="perspective",angle="-1",aspect="-1.3333",sky="(0,1,0)"):
+  def __init__(self, location, direction,up="1*y",camera="perspective",angle="-1",aspect="-1.3333",sky="(0,1,0)",rotatepos="(0,0,0)",rotatevec="(0,0,1)",rotatefac="0.1"):
       self.location = location
       self.direction = direction
       self.aspect = aspect
@@ -51,6 +51,9 @@ class Camera(Object):
       self.angle = angle
       self.up = up
       self.sky = sky
+      self.rotatepos = rotatepos
+      self.rotatevec = rotatevec
+      self.rotatefac = rotatefac
   
   def GetPOVCode(self):
       povCode = "camera { \n"
@@ -67,6 +70,14 @@ class Camera(Object):
       if (float(self.angle)!=-1):
        povCode += "  angle %f\n" % float(self.angle)
       povCode += "  look_at %s\n" % self.GetCoordPOVCode(self.direction)
+      if(self.rotatepos!="<0,0,0>"):
+       vector = eval(str(self.rotatevec))
+       lst = [0,0,0]
+       if(vector[0]!=0): lst[0] = vector[0] + float(self.rotatefac)
+       if(vector[1]!=0): lst[1] = vector[1] + float(self.rotatefac)
+       if(vector[2]!=0): lst[2] = vector[2] + float(self.rotatefac)
+       vct=(lst[0],lst[1],lst[2])
+       povCode += "  Rotate_Around_Trans(%s,%s)" % (self.GetCoordPOVCode(vct),self.GetCoordPOVCode(self.rotatepos))
       povCode += "}\n\n"
       return povCode 
 
@@ -184,7 +195,7 @@ class Scene:
   def __init__(self):
       self.ambientLight = False
       self.objects = []
-      self.includes = ["colors", "stones", "textures", "shapes", "glass", "metals", "woods"]
+      self.includes = ["colors", "stones", "textures", "shapes", "glass", "metals", "woods", "transforms"]
       self.backcolor = "Black"
       self.lights = []
       self.AddLight(LightSource())

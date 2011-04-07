@@ -82,7 +82,7 @@ class LPMD2:
               self.configs.append(this_config)
         self.valid = (len(self.configs) > 0)
 
-    def ReadInPlace(self, path, callback):
+    def ReadInPlace(self, path, temp_config, callback):
         self.valid = False
         f = file(path, 'r')
         header1 = f.readline().strip()
@@ -102,6 +102,7 @@ class LPMD2:
                   line = f.readline()
                   if line == '': raise UnexpectedEndOfFile(path)
                   this_config.append(SplitLine(line))
+              temp_config[0] = this_config
               callback(this_config)
         self.Valid = True
 
