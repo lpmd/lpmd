@@ -41,7 +41,7 @@ void Converter::Iterate()
  }
  while (true)
  {
-  if (bool(control["verbose"])) std::cerr << "-> Processing configuration " << simulation->CurrentStep() << '\n';
+  if (bool(control["verbose"])) std::cerr << "\n-> Processing configuration " << simulation->CurrentStep() << '\n';
   else std::cerr << "-> Processing configuration " << simulation->CurrentStep() << "                     \r";
   std::cerr.flush();
   if (bool(control["verbose"])) simulation->ShowInfo(std::cout);
@@ -64,7 +64,14 @@ void Converter::Iterate()
   RunVisualizers();
   SaveCurrentConfiguration();
   if (inputfile_stream == 0) break;
-  try { simulation->DoStep(); }
+  try 
+  { 
+   while (1)
+   {
+    try { simulation->DoStep(); break; }
+    catch (InvalidRequest & ir) { }
+   }
+  }
   catch (RuntimeError & rt) { break; }
  }
  delete replay;

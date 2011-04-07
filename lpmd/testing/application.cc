@@ -222,8 +222,14 @@ void Application::FillAtomsFromCellReader()
   inputfile_stream = new std::ifstream(inputmodule["file"].c_str());
   cellreader.ReadHeader(*inputfile_stream);
   if (innercontrol.Defined("replay") && (innercontrol["replay"] == "true")) 
-     PreReadConfigurations();
-  else cellreader.ReadCell(*inputfile_stream, *simulation);
+  {
+   PreReadConfigurations();
+  }
+  else
+  {
+   cellreader.ReadCell(*inputfile_stream, *simulation);
+   GlobalSession.DebugStream() << "-> Read a single configuration\n";
+  }
  }
  else
  {

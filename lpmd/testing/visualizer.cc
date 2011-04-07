@@ -77,7 +77,14 @@ void Visualizer::IterateSequential()
   if (control.Defined("delay")) usleep(long(double(control["delay"])*1000000.0));
   RunVisualizers();
   if (inputfile_stream == 0) break;
-  try { simulation->DoStep(); }
+  try 
+  { 
+   while (1)
+   {
+    try { simulation->DoStep(); break; }
+    catch (InvalidRequest & ir) { }
+   }
+  }
   catch (RuntimeError & rt) { break; }
  }
 }

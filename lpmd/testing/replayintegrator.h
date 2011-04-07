@@ -22,6 +22,8 @@ class ReplayIntegrator: public lpmd::Integrator
    lpmd::SimulationHistory & History();
 
  private:
+   long nconf;
+   Stepper mystepper;
    std::istream & inputstream;
    lpmd::CellReader * cellreader;
    lpmd::SimulationHistory history;
