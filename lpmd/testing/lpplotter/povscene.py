@@ -70,7 +70,7 @@ class Camera(Object):
       if (float(self.angle)!=-1):
        povCode += "  angle %f\n" % float(self.angle)
       povCode += "  look_at %s\n" % self.GetCoordPOVCode(self.direction)
-      if(self.rotatepos!="<0,0,0>"):
+      if(self.rotatepos!="(0,0,0)"):
        vector = eval(str(self.rotatevec))
        lst = [0,0,0]
        if(vector[0]!=0): lst[0] = vector[0] + float(self.rotatefac)
