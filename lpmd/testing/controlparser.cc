@@ -57,7 +57,7 @@ UtilityControl::UtilityControl(PluginManager & pm)
  params["replacecell"] = "false";
  params["lastconfig"] = "lastconfig.dump";
  params["optimize-simulation"] = "true";
- params["filter-end"] = "false";
+ params["filter-at-end"] = "false";
  params["replay"] = "false";
  params["loop"] = "false";
 }
@@ -88,6 +88,9 @@ int UtilityControl::OnRegularStatement(const std::string & name, const std::stri
  }
  else if (name == "set")
  {
+  // FIXME: we catch special key names to translate them...
+  if (params["set-option"] == "filter-end") params["set-option"] = "filter-at-end";
+  //
   params[params["set-option"]] = params["set-value"];
   params.Remove("set-option");
   params.Remove("set-value");

@@ -42,7 +42,7 @@ int Visualizer::Run()
  AdjustAtomProperties();
  SetPotentials();
  ApplyPrepares();
- // if (innercontrol["filter-end"] == "false") ApplyFilters();
+ // if (innercontrol["filter-at-end"] == "false") ApplyFilters();
  if (innercontrol.Defined("cellmanager-module"))
  {
   simulation->SetCellManager(CastModule<CellManager>(pluginmanager[innercontrol["cellmanager-module"]]));
@@ -64,7 +64,7 @@ void Visualizer::IterateSequential()
   }
   catch (Error & e) { } // FIXME: Chequear de mejor manera la presencia del cellmanager 
   UpdateAtomicIndices();
-  if (innercontrol["filter-end"] == "true")
+  if (innercontrol["filter-at-end"] == "true")
   {
    RunModifiers();
    ApplyFilters();
@@ -112,7 +112,7 @@ void Visualizer::IterateReplay()
     }
     catch (Error & e) { } // FIXME: Chequear de mejor manera la presencia del cellmanager 
     UpdateAtomicIndices();
-    if (innercontrol["filter-end"] == "true")
+    if (innercontrol["filter-at-end"] == "true")
     {
      RunModifiers();
      ApplyFilters();

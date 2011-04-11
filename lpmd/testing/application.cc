@@ -57,7 +57,7 @@ int Application::Run()
  if (! innercontrol.Defined("restore-file")) ApplyPrepares(); // do not run if restoring simulation 
  if (name == "LPMD")
  {
-  if (innercontrol["filter-end"] == "false") ApplyFilters();
+  if (innercontrol["filter-at-end"] == "false") ApplyFilters();
   else 
   {
    RunModifiers();

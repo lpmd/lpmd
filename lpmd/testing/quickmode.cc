@@ -102,6 +102,9 @@ std::string QuickModeParser::FormattedAsControlFile() const
    Array<std::string> pair = StringSplit(options[p], '=');
    if (pair.Size() != 2) throw SyntaxError("Setting options with -O");
    std::string key = pair[0];
+   // FIXME: we catch special key names to translate them...
+   if (key == "filter-end") key = "filter-at-end";
+   //
    std::string value = pair[1];
    control += ("set "+key+" "+value+"\n");
   }

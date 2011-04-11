@@ -51,7 +51,7 @@ void Converter::Iterate()
   }
   catch (Error & e) { } // FIXME: Chequear de mejor manera la presencia del cellmanager 
   UpdateAtomicIndices();
-  if (innercontrol["filter-end"] == "true")
+  if (innercontrol["filter-at-end"] == "true")
   {
    RunModifiers();
    ApplyFilters();
