@@ -59,16 +59,15 @@ class Camera(Object):
       povCode = "camera { \n"
       povCode += "  %s \n" % self.camera
       povCode += "  location %s\n" % self.GetCoordPOVCode(self.location)
-      if(self.camera!="orthographic" or (self.camera=="orthographic" and float(self.angle)!=-1)):
+      if(self.camera!="orthographic"):
        povCode += "  up 1*y\n"
        povCode += "  right %s*x\n" % self.aspect
        povCode += "  sky %s\n" % self.GetCoordPOVCode(self.sky)
-      if(self.camera=="orthographic" and self.up!="1*y"):
-       povCode += "  up %s\n" % self.GetCoordPOVCode(eval(self.up))
-       povCode += "  right %s\n" % self.GetCoordPOVCode(eval(self.aspect))
+      if(self.camera=="orthographic"):
+       if (float(self.angle)!=-1):
+        povCode += "  angle %f\n" % float(self.angle)
+        povCode += "  right %s*x\n" % self.aspect
        povCode += "  sky %s\n" % self.GetCoordPOVCode(self.sky)
-      if (float(self.angle)!=-1):
-       povCode += "  angle %f\n" % float(self.angle)
       povCode += "  look_at %s\n" % self.GetCoordPOVCode(self.direction)
       if(self.rotatepos!="(0,0,0)"):
        vector = eval(str(self.rotatevec))

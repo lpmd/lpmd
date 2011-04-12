@@ -62,28 +62,28 @@ def render(lp, c):
 
     #aspect negative by left-hand rule
     aspect = -float(float(sizes[0])/float(sizes[1]))
+    camepo = [cp[0], cp[1], cp[2]]
+    camelo = [cl[0], cl[1], cl[2]]
+    fcl = (camelo[0], camelo[1], camelo[2]) 
+    fcp = (camepo[0], camepo[1], camepo[2])
+    
     scene = Scene()
     camarg = {'camera':str(option['camera']['value'])}
     if("cameraAngle" in option): camarg['angle']=float(option['cameraAngle']['value'])
     if(camarg['camera']=="orthographic"):
-     up = (cu[0]*sizes[1]*0.5,cu[1]*sizes[1]*0.5,cu[2]*sizes[1]*0.5)
-     if (cp[2]<=0):
-      tmpr1 = cross(up,vdist(cl,cp))
-     else:
-      tmpr1 = cross(up,vdist(cp,cl))
-     tmpr  = vecno(tmpr1)
-     right = (tmpr[0]*sizes[0]*0.5,tmpr[1]*sizes[0]*0.5,tmpr[2]*sizes[0]*0.5)
-     camarg['up']=str(up)
-     camarg['aspect']=str(right)
+     angle = atan(float(sizes[0])/float(lc))*180.0/pi
+     camarg['angle']=angle 
+     camarg['aspect']=aspect
+     camarg['sky']=cu
     if(camarg['camera']=="perspective"):
      camarg['aspect']=aspect
-    camarg['sky']=cu
+     camarg['sky']=cu
     if("cameraRotate" in option):
      val = float(option["cameraRotate"]["value"])*float(c)
      camarg['rotatepos'] = option["cameraRotate"]["poslook"]
      camarg['rotatevec'] = option["cameraRotate"]["rotvect"]
      camarg['rotatefac'] = str(val)
-    scene.Add(Camera(location=cp, direction=cl, **camarg))
+    scene.Add(Camera(location=fcp, direction=fcl, **camarg))
 
     scene.SetBackgroundColor("<%f, %f, %f>" % background)
     scene.AddLight(LightSource(lightSource0, shadowless=False, spot=False))
