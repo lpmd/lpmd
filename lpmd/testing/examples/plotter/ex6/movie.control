@@ -1,0 +1,18 @@
+input ../half.lpmd
+antialias true
+cameraLocation <71.1866,22.1866,-7.62625>
+cameraLookat <17.5661,14.8469,17.2946>
+cameraUp <-0.153603,0.987335,-0.0397058>
+cameraRotate <17.5661,14.8469,17.2946> <0.408069, 0.0999783, 0.90746> 0.1
+cameraLight higher
+startframes 50
+finalframes 100
+background <1,1,1>
+camera perspective
+radius 0.9
+format imagen%.4d
+box 0.1 <0,0,0>
+povfiles delete
+size 1920x1055
+logo NorthWest "Thermal Needle - GNM"
+movie 10.0 final-movie.avi avi

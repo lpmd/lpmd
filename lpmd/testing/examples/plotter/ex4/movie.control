@@ -1,0 +1,12 @@
+input ../final.lpmd
+antialias true
+cameraLocation <-40.9868, -56.2781, -56.5499>
+cameraUp <0.704282,0.0447842,-0.708504>
+cameraLookat <54.15,54.15,45>
+cameraLight camera
+format imagen%.2d
+background <1.0,1.0,1.0>
+camera orthographic
+radius 0.8
+size  619x637
+logo SouthEast "Cupper NanoIndent - Hannah"

@@ -50,15 +50,11 @@ def render(lp, c):
     cl = option['cameraLookat']['position']
     lc = distance(cp,cl)
     mvec = ((float(cl[0])-float(cp[0]))*0.5, (float(cl[1])-float(cp[1]))*0.5, (float(cl[2])-float(cp[2]))*0.5)
-    lightpos0 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
-    lightpos1 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
-    lightpos2 = (cl[0]+cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
-    lightpos3 = (cl[0]-cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
-    lightSource0= lightpos0
-    lightSource1= lightpos1
-    lightSource2= lightpos2
-    lightSource3= lightpos3
-    lightSource4= option['cameraLocation']['position']
+    lightSource1 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
+    lightSource2 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
+    lightSource3 = (cl[0]+cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
+    lightSource4 = (cl[0]-cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
+    lightSource0= option['cameraLocation']['position']
 
     #aspect negative by left-hand rule
     aspect = -float(float(sizes[0])/float(sizes[1]))
@@ -86,11 +82,26 @@ def render(lp, c):
     scene.Add(Camera(location=fcp, direction=fcl, **camarg))
 
     scene.SetBackgroundColor("<%f, %f, %f>" % background)
+    if("cameraLight" in option):
+     if(option['cameraLight']['value']=="higher"):
+      lightSource5 = (cl[0]-cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
+      lightSource6 = (cl[0]-cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
+      lightSource7 = (cl[0]-cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
+      lightSource8 = (cl[0]+cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
+      scene.AddLight(LightSource(lightSource5, shadowless=False, spot=False))
+      scene.AddLight(LightSource(lightSource6, shadowless=False, spot=False))
+      scene.AddLight(LightSource(lightSource7, shadowless=False, spot=False))
+      scene.AddLight(LightSource(lightSource8, shadowless=False, spot=False))
+      scene.AddLight(LightSource(lightSource1, shadowless=False, spot=False))
+      scene.AddLight(LightSource(lightSource2, shadowless=False, spot=False))
+      scene.AddLight(LightSource(lightSource3, shadowless=False, spot=False))
+      scene.AddLight(LightSource(lightSource4, shadowless=False, spot=False))
+    else:
+     scene.AddLight(LightSource(lightSource1, shadowless=False, spot=False))
+     scene.AddLight(LightSource(lightSource2, shadowless=False, spot=False))
+     scene.AddLight(LightSource(lightSource3, shadowless=False, spot=False))
+     scene.AddLight(LightSource(lightSource4, shadowless=False, spot=False))
     scene.AddLight(LightSource(lightSource0, shadowless=False, spot=False))
-    scene.AddLight(LightSource(lightSource1, shadowless=False, spot=False))
-    scene.AddLight(LightSource(lightSource2, shadowless=False, spot=False))
-    scene.AddLight(LightSource(lightSource3, shadowless=False, spot=False))
-    scene.AddLight(LightSource(lightSource4, shadowless=False, spot=False))
     scene.SetAmbientLight(True)
 
     print "Number of atoms in scene ", c, " is ", len(lp)
@@ -106,16 +117,22 @@ def render(lp, c):
         sphere.SetSpecular(0.1)
         sphere.SetPhong(0.3)
         scene.Add(sphere)
-    if (option['box']['value']==True):
+    if ("box" in option):
      borders = Cube(lp.cell[0],lp.cell[1],lp.cell[2],r=float(option['box']['radius']))
      borders.SetColor("<%f, %f, %f>" % option['box']['color'])
      borders.SetSpecular(0.1)
      borders.SetPhong(0.3)
      scene.Add(borders)
-    print "Rendering movie%.4d..." % (c)
+    fmt =''
+    if("format" in option):
+     fmt = option['format']['value']
+    else:
+     fmt = "movie%.4d"
+    ffmt = fmt % (c) + ".png"
+    print "Rendering %s..." % (ffmt)
     if ("povfiles" in option):
      if(option['povfiles']['value']=="keep"): scene.ExportPOV("movie%.4d.pov" % c)
-    scene.Render("movie%.4d.png" % c, format="png", size=sizes, antialias=True, op=option)
+    scene.Render(ffmt, format="png", size=sizes, antialias=True, op=option)
 
 
 def newrender(lp):

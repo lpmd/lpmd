@@ -1,0 +1,163 @@
+********************
+*lpmd-plotter*******
+********************
+
+Overview
+========
+
+This is an external utility for lpmd, the goal is generate high-quiality render images
+from a standard input file in lpmd format.
+
+The intention is use lpvisual in order to determine the perpective and initial settings
+for use lpmd-plotter.
+
+Requirements
+============
+
+* povray
+* mencoder (in order to make directly the movie)
+
+Use
+===
+
+The lpmd-plotter executable use a control file as a argument. The control file contain
+all the necessary information to make the rendering and the movie.
+
+ lpmd-plotter input.control
+
+You only need fill the input.control file with the necessary options.
+
+Mandatory Options
+=================
+
+* input : Specify the file name in lpmd format.
+          Example : input ../../output.lpmd
+
+* antialias : true/false Specify the antialias for the renderization.
+              Example : antialias true
+
+* cameraLocation : Vector position from the camera. Take this value from lpvisual.
+                   Example : cameraLocation <10.0,10.0,10.0>
+
+* cameraLookat : Spacial position where the camera look. Take this value from lpvisual.
+                 Example : cameraLookat <5.0,5.0,5.0>
+
+* cameraUp : Rotation of the camera. Taken this value from lpvisual.
+             Example : cameraUp <-0.005,0.001,0.999>
+
+* camera : Define the type of camera, could be perspective or orthorombic.
+           Example : camera perspective
+
+* size : Size of the screen. Take this value from lpvisual.
+         Example : size 640x480
+
+* background : Color of the background of the image. In RGB vector format between 0-1.
+               Example : background <1.0,1.0,1.0>
+
+* radius : Size of the radius of the atoms. Usually between 0 and 2.
+           Example : radius 0.8
+
+Additional Options
+==================
+
+This is a set of additional options that you can use with lpmd-plotter.
+
+* cameraLight : This have three different light modes in this version:
+                * camera : Only ambientlight and an additional light with the camera.
+                * medium : Default value, equal to camera more 4 lights.
+                * higher : Equal to medium light but with additional 4 lights. Very
+                           useful for rotateCamera and make movies.
+
+* cameraRotate : This rotate the camera in order the png images are generated.
+                 The rotation must be specify:
+                 * Spatial point to look (around this the camera will rotate)
+                 * Rotation vector (Vector of the direction of rotation). A recommended
+                   value for this is the direction (look-pos) cross the up vector.
+                 * Angle increase factor in each step. If is zero then is not increased.
+                 Example : cameraRotate <15,15,15> <0.5,0.0,0.0> 0.1
+
+* startframes : Set a number of initial frames with the initial configuration before
+                the atoms start to move.
+                Example : startframes 50
+
+* finalframes : Set a number of final frames with the last configuration after the 
+                atoms are totally freezing.
+                Example : finalframes 50
+
+* box : Set a box of the simulationcell. The parameters are the radius of the cylinder
+        and finally the color of these.
+        Example : box 0.1 <0.0,0.0,0.0>
+
+* format : Specify the ouput format for the png and pov files. Used to set the number
+           of decimals in the output. By default the format is movie%.4d
+           Example : format pelicula%.3d
+
+* povfiles : Delete or keep the povfiles generated during the process of rendering.
+             Example : povfiles keep
+
+* logo : Add a text logo in the final picture. You can set the position in the same way
+         that the command convert (convert -list gravity).
+         Example : logo NorthWest "My first video."
+
+* movie : Generate an avi movie using mencoder. This is generated from the png files.
+          You have to specify the number of frame per seconds, the name and the format
+          of the image.
+          Example : movie 12.0 final-movie.avi avi
+
+Examples
+========
+
+-The first four examples take the same input file using different cameras and
+ perspectives.
+-The examples number 5,6,7 and 8 generate a movie from a small input file, using
+ different parameters for lpmd-plotter.
+
+ex1 : Take the values from lpvisual (Screenshot-1.png) and use this values in the 
+      movie.control file. Using orthographic camera, and this example do not generate
+      a avi movie. This example :
+      * Use standard lights
+      * Set a box
+      * Keep the pov file
+      * Add a textual logo
+
+ex2 : Take the values from lpvisual (Screenshot-2.png) and use this values in the
+      movie.control file. Using perspective camera, this example do not generate an avi
+      movie. This example :
+      * Use full lights
+      * Set a box
+      * Delete the pov files
+      * Add a textual logo
+
+ex3 : Take the values from lpvisual (Screenshot-3.png) and use this values in the
+      movie.control file. Using orthographic camera, this example do not generate an avi
+      movie. In this example :
+      * Use antialias false
+      * Change background color
+      * Set a different image size. 912x856
+      * Set logo in a different part.
+
+ex4 : Take the values from lpvisual (Screenshot-4.png) and use this values in the
+      movie.control file. Using ..... camera, this example do not generate an avi movie.
+      In this example :
+      * Use different format
+      * Do not set a box
+      * lower light
+
+ex5 : Take values from lpvisual of a preliminar simulaiton (half.lpmd) of a thermal
+      needle (examples/argon-thermalneedle.control) filtered using lpmd-converter
+      'lpmd-converter -i lpmd:sphere.lpmd,start=0,end=-1,each=10 -o lpmd:file=half.lpmd,extra=rgb -u box:x=all,y=0-17.1,z=all -r'
+      This example :
+      * Take around 35 minutes.
+      * Generate a movie 
+      * Do not rotate the sample and do not add extra frames.
+      * Use the format in order to define the ouput of the png files.
+
+ex6 : Take values from lpvisual of a prelimunar simulations of a thermal needle 
+      (same case that ex5).
+      This example :
+      * Take around 50 min.
+      * Generate a movie.
+      * Rotate the camera.
+      * Add extra frames.
+      * The frame per seconds is less, so the movie will be longer that ex5.
+

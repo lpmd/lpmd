@@ -197,7 +197,6 @@ class Scene:
       self.includes = ["colors", "stones", "textures", "shapes", "glass", "metals", "woods", "transforms"]
       self.backcolor = "Black"
       self.lights = []
-      self.AddLight(LightSource())
 
   def Add(self, object):
       self.objects.append(object)
@@ -258,4 +257,4 @@ class Scene:
        os.system(command)
        command = "mv tmp.png %s" % outfile
        os.system(command)
-
+      os.system("rm modeltmp.pov")
