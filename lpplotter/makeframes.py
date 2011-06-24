@@ -22,6 +22,7 @@ def vecno(v): return [v[0]/norma(v), v[1]/norma(v), v[2]/norma(v)]
 def dot(x,y): return sum(a*b for a,b in zip(x,y))
 def distance(x,y): return sqrt(sum((a-b)**2 for a,b in zip(x,y)))
 def vdist(x,y): return(y[0]-x[0],y[1]-x[1],y[2]-x[2])
+def sumlist(x,y): return(y[0]+x[0],y[1]+x[1],y[2]+x[2])
 #Cross Defined with left-hand (povray style)
 def cross(x,y): 
  a = x[1]*y[2]-x[2]*y[1]
@@ -104,6 +105,28 @@ def render(lp, c):
     scene.AddLight(LightSource(lightSource0, shadowless=False, spot=False))
     scene.SetAmbientLight(True)
 
+    ab = sumlist(lp.cell[0],lp.cell[1])
+    bc = sumlist(lp.cell[1],lp.cell[2])
+    ac = sumlist(lp.cell[0],lp.cell[2])
+    abc = sumlist(ab,lp.cell[2])
+    allplanes = ( ((0,0,0),lp.cell[0],ab,lp.cell[1]),
+                  ((0,0,0),lp.cell[0],ac,lp.cell[2]),
+                  ((0,0,0),lp.cell[2],bc,lp.cell[1]),
+                  (sumlist((0,0,0),lp.cell[2]),sumlist(lp.cell[0],lp.cell[2]),sumlist(ab,lp.cell[2]),sumlist(lp.cell[1],lp.cell[2])),
+                  (sumlist((0,0,0),lp.cell[1]),sumlist(lp.cell[0],lp.cell[1]),sumlist(ac,lp.cell[1]),sumlist(lp.cell[2],lp.cell[1])),
+                  (sumlist((0,0,0),lp.cell[0]),sumlist(lp.cell[2],lp.cell[0]),sumlist(bc,lp.cell[0]),sumlist(lp.cell[1],lp.cell[0])),
+                )
+ 
+    for i in range(1,7):
+     plane = "plane" + str(i)
+     if(plane in option):
+      bplane = BoxPlane(allplanes[i-1])
+      bplane.SetColor("<%f, %f, %f>" % option[plane]['color'])
+      bplane.SetSpecular(0.01)
+      bplane.SetPhong(0.03)
+      bplane.SetTransmit(float(float(option[plane]['transparency'])/100.0))
+      scene.Add(bplane)
+      
     print "Number of atoms in scene ", c, " is ", len(lp)
     for atom in range(len(lp)):
         (x, y, z) = lp.PackTags(('X','Y','Z'), atom)

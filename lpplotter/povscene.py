@@ -11,6 +11,7 @@ class Object:
   def __init__(self):
       self.phong = 0
       self.specular = 0
+      self.transmit = 1
       self.color = "Green"
 
   def SetColor(self, color):
@@ -22,9 +23,15 @@ class Object:
   def SetSpecular(self, specular):
       self.specular = specular
 
+  def SetTransmit(self, transmit):
+      self.transmit = transmit
+
   def GetTexturePOVCode(self):
       povCode = "texture { \n"
-      povCode += "  pigment { color %s }\n" % self.color 
+      if self.transmit < 1:
+       povCode += "  pigment { color %s transmit %s }\n" % (self.color,self.transmit)
+      else:
+       povCode += "  pigment { color %s }\n" % self.color 
       phongCode = ""
       specCode = ""
       if self.phong > 0: 
@@ -121,6 +128,21 @@ class Sphere(Object):
       povCode += "}\n\n"
       return povCode
 
+#
+#
+#
+class BoxPlane(Object):
+
+  def __init__(self, points):
+      Object.__init__(self)
+      self.points = points
+
+  def GetPOVCode(self):
+      povCode = "polygon { \n"
+      povCode += "  4, %s, %s, %s, %s\n" % (self.GetCoordPOVCode(self.points[0]),self.GetCoordPOVCode(self.points[1]),self.GetCoordPOVCode(self.points[2]),self.GetCoordPOVCode(self.points[3]))
+      povCode += self.GetTexturePOVCode()
+      povCode += "}\n\n"
+      return povCode
 #
 #
 #

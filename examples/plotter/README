@@ -88,6 +88,11 @@ This is a set of additional options that you can use with lpmd-plotter.
         and finally the color of these.
         Example : box 0.1 <0.0,0.0,0.0>
 
+* planeN : <N=1..6> Set the plane(s) to show in the image, you can set the color 
+           and the level of transparency. Th planes are 1=xy;2=xz;3=yz;4=1+c;
+           5=2+b;6=3+a. The level of transparency have to be a value between 0 and 100.
+           Example : plane3 <0.5,0.0,0.0> 34
+
 * format : Specify the ouput format for the png and pov files. Used to set the number
            of decimals in the output. By default the format is movie%.4d
            Example : format pelicula%.3d
