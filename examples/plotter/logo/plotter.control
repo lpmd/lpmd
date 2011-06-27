@@ -1,0 +1,17 @@
+input sphere.lpmd
+antialias true
+cameraLight higher
+cameraLocation <1.85,1.58,1.65>
+cameraUp <-0.42, 0.84, -0.33>
+cameraLookat <0.51,0.47,0.51>
+plane1 <0,0.1,1> 0
+plane2 <0,0,0.4> 20
+plane3 <0,0.1,0.6> 0
+plane4 <0,0,0.9> 80
+plane6 <0,0,0.9> 80
+background <1.0,1.0,1.0>
+camera perspective
+radius 0.48
+#box 0.001 <0,0,0.3>
+povfiles keep
+size  640x480
