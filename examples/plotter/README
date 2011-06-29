@@ -62,11 +62,20 @@ Additional Options
 
 This is a set of additional options that you can use with lpmd-plotter.
 
-* cameraLight : This have three different light modes in this version:
-                * camera : Only ambientlight and an additional light with the camera.
-                * medium : Default value, equal to camera more 4 lights.
-                * higher : Equal to medium light but with additional 4 lights. Very
-                           useful for rotateCamera and make movies.
+* warning     : This show/hide the warning messages, now only for messages related to light issues.
+                * on : Show warning messages
+                * off: Hide the warning messages
+                Example : warning off 
+
+* cameraLight : This is a number that indicate a factor for the 4 principal lights
+                * The default value is the longer axes plus a 10%.
+                * For highly asimetric box, set the value close the the small axis.
+                * Try the option extraLight too to improve the image resolution.
+                Example : cameraLight 25.0
+* extraLight : Add extra light to the scene.
+                * Are the same 5 front light by default plus 5 extra light in the back part of the scene.
+                * back : is the only argument by the moment.
+                Example : extraLight back
 
 * cameraRotate : This rotate the camera in order the png images are generated.
                  The rotation must be specify:
@@ -107,7 +116,9 @@ This is a set of additional options that you can use with lpmd-plotter.
 * movie : Generate an avi movie using mencoder. This is generated from the png files.
           You have to specify the number of frame per seconds, the name and the format
           of the image.
+          * For the case of gif animated output, the fps correspond of the time of the loop.
           Example : movie 12.0 final-movie.avi avi
+          Example : movie 3.0 final-gif.gif gif
 
 Examples
 ========
@@ -166,3 +177,12 @@ ex6 : Take values from lpvisual of a prelimunar simulations of a thermal needle
       * Add extra frames.
       * The frame per seconds is less, so the movie will be longer that ex5.
 
+ex7 : Take a voronoi nanostructure generated using the voronoi plugin. The idea is rotate the image in 360 degrees. 
+      Is useful to generate animated gif for online images.
+      * Take around ... min.
+      * Generate a gif using convert.
+      * Rotate the camera.
+      * Is only one frame.
+
+logo : Generate the lpmd logo using lpmd-plotter.
+      * Color and B/W logo.

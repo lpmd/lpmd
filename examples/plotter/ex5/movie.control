@@ -3,7 +3,7 @@ antialias true
 cameraLocation <71.1866,22.1866,-7.62625>
 cameraLookat <17.5661,14.8469,17.2946>
 cameraUp <-0.153603,0.987335,-0.0397058>
-cameraLight higher
+extraLight back
 background <1,1,1>
 camera perspective
 radius 0.9

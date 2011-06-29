@@ -23,18 +23,28 @@ def dot(x,y): return sum(a*b for a,b in zip(x,y))
 def distance(x,y): return sqrt(sum((a-b)**2 for a,b in zip(x,y)))
 def vdist(x,y): return(y[0]-x[0],y[1]-x[1],y[2]-x[2])
 def sumlist(x,y): return(y[0]+x[0],y[1]+x[1],y[2]+x[2])
+def factorl(x,y): return(x[0]*y,x[1]*y,x[2]*y)
+def inside(p,a,b,c):
+ wp = (a,b,c)
+ for i in range(0,3):
+  if (p[i] < 0.0 or p[i]>norma(wp[i])): return 1 
+ return 0
 #Cross Defined with left-hand (povray style)
 def cross(x,y): 
  a = x[1]*y[2]-x[2]*y[1]
  b = x[0]*y[2]-x[2]*y[0]
  c = x[0]*y[1]-x[1]*y[0]
- return (-a,-b,-c)
+ return (a,-b,c)
 
 def Movie(formatinput="png"):
     fcode = "" 
-    if option['movie']['format']=="avi": fcode = " -ovc lavc -lavcopts vcodec=mpeg4:vqscale=2:vhq:trell:autoaspect "
-    if option['movie']['format']=="mpg": fcode = " -ovc lavc -lavcopts vcodec=wmv2 "
-    command = "mencoder mf://*.%s -mf fps=%d -o %s %s" % (formatinput, float(option['movie']['value']), option['movie']['file'], fcode)
+    if option['movie']['format']!="gif":
+     if option['movie']['format']=="avi": fcode = " -ovc lavc -lavcopts vcodec=mpeg4:vqscale=2:vhq:trell:autoaspect "
+     if option['movie']['format']=="mpg": fcode = " -ovc lavc -lavcopts vcodec=wmv2 "
+     command = "mencoder mf://*.%s -mf fps=%d -o %s %s" % (formatinput, option['movie']['value'], option['movie']['file'], fcode)
+    else:
+     command = "convert -loop 0 -delay %s *.%s %s" % (option['movie']['value'], formatinput, option['movie']['file'])
+    print "Generating Movie .... please wait."
     os.system(command)
 
 def render(lp, c):
@@ -44,19 +54,15 @@ def render(lp, c):
     LX = norma(lp.cell[0]) 
     LY = norma(lp.cell[1])
     LZ = norma(lp.cell[2])
+    scene = Scene()
 
     #cp=cameraLocation;cu=cameraUp;cl=cameraLookat;lc=LargeBetweenCLandCP
     cp = option['cameraLocation']['position'] 
     cu = option['cameraUp']['position']
     cl = option['cameraLookat']['position']
     lc = distance(cp,cl)
-    mvec = ((float(cl[0])-float(cp[0]))*0.5, (float(cl[1])-float(cp[1]))*0.5, (float(cl[2])-float(cp[2]))*0.5)
-    lightSource1 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
-    lightSource2 = (cl[0]+cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
-    lightSource3 = (cl[0]+cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
-    lightSource4 = (cl[0]-cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
-    lightSource0= option['cameraLocation']['position']
 
+    #CAMERA SECTION.
     #aspect negative by left-hand rule
     aspect = -float(float(sizes[0])/float(sizes[1]))
     camepo = [cp[0], cp[1], cp[2]]
@@ -64,7 +70,7 @@ def render(lp, c):
     fcl = (camelo[0], camelo[1], camelo[2]) 
     fcp = (camepo[0], camepo[1], camepo[2])
     
-    scene = Scene()
+    ligarg = {'color':'White'}
     camarg = {'camera':str(option['camera']['value'])}
     if("cameraAngle" in option): camarg['angle']=float(option['cameraAngle']['value'])
     if(camarg['camera']=="orthographic"):
@@ -80,31 +86,59 @@ def render(lp, c):
      camarg['rotatepos'] = option["cameraRotate"]["poslook"]
      camarg['rotatevec'] = option["cameraRotate"]["rotvect"]
      camarg['rotatefac'] = str(val)
+     ligarg['rotatepos'] = camarg['rotatepos']
+     ligarg['rotatevec'] = camarg['rotatevec']
+     ligarg['rotatefac'] = camarg['rotatefac']
     scene.Add(Camera(location=fcp, direction=fcl, **camarg))
 
-    scene.SetBackgroundColor("<%f, %f, %f>" % background)
+    #LIGHTS SECTION.
+    P = vdist(cp,cl)
+    q = vecno(cu)
+    p = vecno(P)
+    r = cross(p,q)
+    rp = cross(q,p)
+    qp = cross(p,r)
+    pp = cross(r,q)
+    v1 = sumlist(cl, factorl(P,0.3333))
+    v2 = sumlist(cl, factorl(P,-0.3333))
+    fs = max((LX,LY,LZ))*1.50
     if("cameraLight" in option):
-     if(option['cameraLight']['value']=="higher"):
-      lightSource5 = (cl[0]-cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
-      lightSource6 = (cl[0]-cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]+cu[2]*lc*0.5)
-      lightSource7 = (cl[0]-cu[0]*lc*0.5,cl[1]+cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
-      lightSource8 = (cl[0]+cu[0]*lc*0.5,cl[1]-cu[1]*lc*0.5,cl[2]-cu[2]*lc*0.5)
-      scene.AddLight(LightSource(lightSource5, shadowless=False, spot=False))
-      scene.AddLight(LightSource(lightSource6, shadowless=False, spot=False))
-      scene.AddLight(LightSource(lightSource7, shadowless=False, spot=False))
-      scene.AddLight(LightSource(lightSource8, shadowless=False, spot=False))
-      scene.AddLight(LightSource(lightSource1, shadowless=False, spot=False))
-      scene.AddLight(LightSource(lightSource2, shadowless=False, spot=False))
-      scene.AddLight(LightSource(lightSource3, shadowless=False, spot=False))
-      scene.AddLight(LightSource(lightSource4, shadowless=False, spot=False))
-    else:
-     scene.AddLight(LightSource(lightSource1, shadowless=False, spot=False))
-     scene.AddLight(LightSource(lightSource2, shadowless=False, spot=False))
-     scene.AddLight(LightSource(lightSource3, shadowless=False, spot=False))
-     scene.AddLight(LightSource(lightSource4, shadowless=False, spot=False))
-    scene.AddLight(LightSource(lightSource0, shadowless=False, spot=False))
+     fs = float(option['cameraLight']['value'])
+    lightSource0 = option['cameraLocation']['position']
+    lightSource1 = sumlist(v1,factorl(q,fs))
+    lightSource2 = sumlist(v1,factorl(qp,fs))
+    lightSource3 = sumlist(v1,factorl(p,fs))
+    lightSource4 = sumlist(v1,factorl(pp,fs))
+    if(("warning" in option)==False or option['warning']['value']=="on"):
+     for i in range(1,5):
+      light="lightSource"+str(i)
+      if(inside(vars()[light],lp.cell[0],lp.cell[1],lp.cell[2])==0):
+       print " WARNING : Light " + str (i) + " = " + str(vars()[light])
+       print "           is inside the cell."
+
+    scene.AddLight(LightSource(lightSource1, shadowless=False, spot=False, **ligarg))
+    scene.AddLight(LightSource(lightSource2, shadowless=False, spot=False, **ligarg))
+    scene.AddLight(LightSource(lightSource3, shadowless=False, spot=False, **ligarg))
+    scene.AddLight(LightSource(lightSource4, shadowless=False, spot=False, **ligarg))
+    scene.AddLight(LightSource(lightSource0, shadowless=False, spot=False, **ligarg))
     scene.SetAmbientLight(True)
 
+    if("extraLight" in option):
+     if(option['extraLight']['value']=="back"):
+      lightSource5 = sumlist(v2,factorl(q,fs))
+      lightSource6 = sumlist(v2,factorl(qp,fs))
+      lightSource7 = sumlist(v2,factorl(p,fs))
+      lightSource8 = sumlist(v2,factorl(pp,fs))
+      lightSource9 = factorl(cl,-1.0)
+      scene.AddLight(LightSource(lightSource5, shadowless=False, spot=False, **ligarg))
+      scene.AddLight(LightSource(lightSource6, shadowless=False, spot=False, **ligarg))
+      scene.AddLight(LightSource(lightSource7, shadowless=False, spot=False, **ligarg))
+      scene.AddLight(LightSource(lightSource8, shadowless=False, spot=False, **ligarg))
+      scene.AddLight(LightSource(lightSource9, shadowless=False, spot=False, **ligarg))
+
+    scene.SetBackgroundColor("<%f, %f, %f>" % background)
+
+    #PLANES SECTION.
     ab = sumlist(lp.cell[0],lp.cell[1])
     bc = sumlist(lp.cell[1],lp.cell[2])
     ac = sumlist(lp.cell[0],lp.cell[2])
@@ -126,17 +160,23 @@ def render(lp, c):
       bplane.SetPhong(0.03)
       bplane.SetTransmit(float(float(option[plane]['transparency'])/100.0))
       scene.Add(bplane)
-      
+
+    #ATOMS SECTION.
     print "Number of atoms in scene ", c, " is ", len(lp)
     for atom in range(len(lp)):
         (x, y, z) = lp.PackTags(('X','Y','Z'), atom)
         x = x*LX
         y = y*LY
         z = z*LZ
-        (r, g, b) = lp.Tag('rgb', atom)
         radius = float(option['radius']['value'])
         sphere = Sphere((x, y, z), radius)
-        sphere.SetColor("<%f, %f, %f>" % (r, g, b))
+        if ('rgb' in lp.tags):
+         sphere.SetColor("<%f, %f, %f>" % lp.Tag('rgb', atom))
+        else:
+         if ("atomcolor" in option): 
+          sphere.SetColor("<%f, %f, %f>" % option['atomcolor']['color'])
+         else:
+          sphere.SetColor("<0.0,0.0,1.0>")
         sphere.SetSpecular(0.1)
         sphere.SetPhong(0.3)
         scene.Add(sphere)

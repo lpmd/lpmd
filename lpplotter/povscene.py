@@ -92,12 +92,15 @@ class Camera(Object):
 #
 class LightSource(Object):
 
-  def __init__(self, location=(0.0, 0.0, 0.0), color="White", shadowless=False, spot=False, point=None):
+  def __init__(self, location=(0.0, 0.0, 0.0), color="White", shadowless=False, spot=False, point=None, rotatepos="(0,0,0)",rotatevec="(0,0,1)",rotatefac="0.1"):
       self.location = location
       self.color = color
       self.shadowless = shadowless
       self.spotlight = spot
       self.pointto = point
+      self.rotatepos = rotatepos
+      self.rotatevec = rotatevec
+      self.rotatefac = rotatefac
 
   def SetShadowless(self, value):
       self.shadowless = value
@@ -107,7 +110,16 @@ class LightSource(Object):
       spt = ""
       if self.shadowless: shadow = "shadowless"
       if self.spotlight: spt = "spotlight point_at <%f %f %f>" % (self.pointto[0], self.pointto[1], self.pointto[2])
-      povCode = "light_source { %s color %s %s %s }\n" % (self.GetCoordPOVCode(self.location), self.color, shadow, spt)
+      povCode = "light_source { %s color %s %s %s \n" % (self.GetCoordPOVCode(self.location), self.color, shadow, spt)
+      if(self.rotatepos!="(0,0,0)"):
+       vector = eval(str(self.rotatevec))
+       lst = [0,0,0]
+       if(vector[0]!=0): lst[0] = vector[0] + float(self.rotatefac)
+       if(vector[1]!=0): lst[1] = vector[1] + float(self.rotatefac)
+       if(vector[2]!=0): lst[2] = vector[2] + float(self.rotatefac)
+       vct=(lst[0],lst[1],lst[2])
+       povCode += "  Rotate_Around_Trans(%s,%s)" % (self.GetCoordPOVCode(vct),self.GetCoordPOVCode(self.rotatepos))
+      povCode += " } \n"
       return povCode 
 
 #
