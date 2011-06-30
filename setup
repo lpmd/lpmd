@@ -714,6 +714,7 @@ class SetupHandler:
         if not st:
            if library in ('libdl', 'libm'):
               sys.stdout.write('not found (IGNORED)\n')
+              st = True
            else: sys.stdout.write('NOT FOUND\n')
         return st
 
