@@ -485,6 +485,8 @@ class SetupHandler:
         self.librarypath = []
         self.AddToLibraryPath('/usr/local/lib')
         self.AddToLibraryPath('/usr/lib')
+        for thing in os.listdir('/usr/lib'):
+            if os.path.isdir(thing): self.AddToLibraryPath(thing)
         for lang in defaultLanguages: self.language[lang] = Language(lang)
         self.ParsePackageSetup(psetup, options)
         self.fulloptions = options.fulloptions 
@@ -699,7 +701,7 @@ class SetupHandler:
            sys.stdout.write('NOT FOUND\n')
            return None
 
-    def HaveLibrary(self, library): 
+    def HaveLibrary(self, library):
         sys.stdout.write('   '+library+' ')
         st = False
         for lpath in self.LibraryPath():
@@ -709,7 +711,10 @@ class SetupHandler:
                    st = True
                    break
             if st: break
-        if not st: sys.stdout.write('NOT FOUND\n')
+        if not st:
+           if library in ('libdl', 'libm'):
+              sys.stdout.write('not found (IGNORED)\n')
+           else: sys.stdout.write('NOT FOUND\n')
         return st
 
     def HavePkgConfigLibrary(self, pc):
