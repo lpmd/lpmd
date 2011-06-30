@@ -486,7 +486,8 @@ class SetupHandler:
         self.AddToLibraryPath('/usr/local/lib')
         self.AddToLibraryPath('/usr/lib')
         for thing in os.listdir('/usr/lib'):
-            if os.path.isdir(thing): self.AddToLibraryPath(thing)
+            dirthing = os.path.join('/usr/lib', thing)
+            if os.path.isdir(dirthing): self.AddToLibraryPath(dirthing)
         for lang in defaultLanguages: self.language[lang] = Language(lang)
         self.ParsePackageSetup(psetup, options)
         self.fulloptions = options.fulloptions 
