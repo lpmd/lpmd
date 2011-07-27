@@ -1,0 +1,7 @@
+set replacecell true
+input module=lpmd file=quartz.lpmd
+
+output module=lpmd file=output-index.lpmd extra=rgb
+
+filter index index=1000-3087
+

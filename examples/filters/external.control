@@ -1,0 +1,6 @@
+set replacecell true
+input module=lpmd file=quartz.lpmd
+
+output module=lpmd file=output-external.lpmd extra=rgb
+
+filter external extfile=data.dat extcolumn=2 extheader=1 min=20000 max=36000
