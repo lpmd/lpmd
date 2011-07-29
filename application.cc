@@ -343,6 +343,7 @@ void Application::ApplyFilters()
    Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
    GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
    filtering_plugin.Show(GlobalSession.DebugStream());
+   CastModule<SystemFilter>(filtering_plugin).Update(*simulation);
    Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
    bool inverse2 = false;
    if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse2 = true;
@@ -351,6 +352,7 @@ void Application::ApplyFilters()
    //
    simulation->ApplyAtomMask(selector, inverse2); 
    BasicParticleSet & atoms = simulation->Atoms();
+   sfilt.Update(*simulation);
    Selector<BasicParticleSet> & selector2 = sfilt.CreateSelector();
    ParticleSet * filtered = 0;
    bool inverted = bool(rawmodule["inverse"]);
@@ -428,6 +430,7 @@ template <typename T> void ApplySteppers(PluginManager & pluginmanager, UtilityC
      Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
      GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
      filtering_plugin.Show(GlobalSession.DebugStream());
+     CastModule<SystemFilter>(filtering_plugin).Update(simulation);
      Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
      bool inverse = false;
      if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse = true;
@@ -488,6 +491,7 @@ void Application::ComputeProperties()
     Module & filtering_plugin = pluginmanager[rawmodule["filterby"]];
     GlobalSession.DebugStream() << "-> Filtering plugin details:\n";
     filtering_plugin.Show(GlobalSession.DebugStream());
+    CastModule<SystemFilter>(filtering_plugin).Update(*simulation);
     Selector<BasicParticleSet> & selector = (CastModule<SystemFilter>(filtering_plugin)).CreateSelector();
     bool inverse = false;
     if (filtering_plugin.Defined("inverse") && (bool(filtering_plugin["inverse"]))) inverse = true;
