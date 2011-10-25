@@ -192,5 +192,12 @@ ex7 : Take a voronoi nanostructure generated using the voronoi plugin. The idea 
       * Rotate the camera.
       * Is only one frame.
 
+ex8 : Take a surface of TiO2 in lpmd format. Is a single file, with only one 
+      atomic configuration. However the goal is make a single movie with this.
+      * Take arount 10 min,
+      * Generate a avi video
+      * Rotate the camera.
+      * This use startrotate and endrotate variables.
+
 logo : Generate the lpmd logo using lpmd-plotter.
       * Color and B/W logo.
