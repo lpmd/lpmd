@@ -85,6 +85,14 @@ This is a set of additional options that you can use with lpmd-plotter.
                  * Angle increase factor in each step. If is zero then is not increased.
                  Example : cameraRotate <15,15,15> <0.5,0.0,0.0> 0.1
 
+* startrotate : Frame which the figure will start the rotation process. By default the
+                value is set to 1.
+		Example : startrotate 35
+
+* endrotate   : Frame which the figure will stop the rotation process. By default the rotation
+                do not finish.
+		Example : endrotate 60
+
 * startframes : Set a number of initial frames with the initial configuration before
                 the atoms start to move.
                 Example : startframes 50
@@ -159,7 +167,7 @@ ex4 : Take the values from lpvisual (Screenshot-4.png) and use this values in th
       * Do not set a box
       * lower light
 
-ex5 : Take values from lpvisual of a preliminar simulaiton (half.lpmd) of a thermal
+ex5 : Take values from lpvisual of a preliminar simulation (half.lpmd) of a thermal
       needle (examples/argon-thermalneedle.control) filtered using lpmd-converter
       'lpmd-converter -i lpmd:sphere.lpmd,start=0,end=-1,each=10 -o lpmd:file=half.lpmd,extra=rgb -u box:x=all,y=0-17.1,z=all -r'
       This example :
@@ -179,7 +187,7 @@ ex6 : Take values from lpvisual of a prelimunar simulations of a thermal needle
 
 ex7 : Take a voronoi nanostructure generated using the voronoi plugin. The idea is rotate the image in 360 degrees. 
       Is useful to generate animated gif for online images.
-      * Take around ... min.
+      * Take around 4-10 min.
       * Generate a gif using convert.
       * Rotate the camera.
       * Is only one frame.

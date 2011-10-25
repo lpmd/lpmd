@@ -56,6 +56,16 @@ def render(lp, c):
     LZ = norma(lp.cell[2])
     scene = Scene()
 
+    #Start to rotate
+    if ("startrotate" in option):
+     sr = int(option['startrotate']['value'])
+    else :
+     sr = 1
+    #Endrotate
+    if ("endrotate" in option):
+     er = int(option['endrotate']['value'])
+    else :
+     er = -1
     #cp=cameraLocation;cu=cameraUp;cl=cameraLookat;lc=LargeBetweenCLandCP
     cp = option['cameraLocation']['position'] 
     cu = option['cameraUp']['position']
@@ -81,14 +91,17 @@ def render(lp, c):
     if(camarg['camera']=="perspective"):
      camarg['aspect']=aspect
      camarg['sky']=cu
-    if("cameraRotate" in option):
-     val = float(option["cameraRotate"]["value"])*float(c)
+    if(("cameraRotate" in option) and c>=sr):
+     val = float(option["cameraRotate"]["value"])*float(c-sr)
+     if(c>=er and er!=-1):
+      val=float(option["cameraRotate"]["value"])*float(er-sr)
      camarg['rotatepos'] = option["cameraRotate"]["poslook"]
      camarg['rotatevec'] = option["cameraRotate"]["rotvect"]
      camarg['rotatefac'] = str(val)
      ligarg['rotatepos'] = camarg['rotatepos']
      ligarg['rotatevec'] = camarg['rotatevec']
      ligarg['rotatefac'] = camarg['rotatefac']
+     print "Rotating camera by " + str(val) + " ... " 
     scene.Add(Camera(location=fcp, direction=fcl, **camarg))
 
     #LIGHTS SECTION.
@@ -200,7 +213,7 @@ def render(lp, c):
 
 def newrender(lp):
  global c
- if ("startframes" in option and c==1):
+ if (("startframes" in option) and c==1):
   for i in range (1,int(option['startframes']['value'])):
    render (lp,c)
    c+=1
