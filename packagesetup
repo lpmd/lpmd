@@ -4,7 +4,7 @@
 
 name = lpmd
 fullname = 'LPMD'
-version = 0.6.1
+version = 0.6.3
 author = 'GNM <gnm@gnm.cl>'
 prefix = /usr/local
 
@@ -12,7 +12,7 @@ language c++
 ifdef intel
    compiler = icpc
    linker = icpc -Wall -O3 -axSSE4.1 -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -lpthread
-   flags = -Wall -O3 -axSSE4.1 -openmp -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -lpthread -lguide
+   flags =-g -Wall -O3 -axSSE4.1 -openmp -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -lpthread -lguide
    ifdef openmp
     openmpflags = -openmp
    endif
