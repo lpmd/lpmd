@@ -1,0 +1,17 @@
+
+cell cubic 17.1191
+input xyz output.xyz inside=true
+
+use minimumimage
+    cutoff 8.0
+    debug none
+enduse
+
+use msd
+    output msd.dat
+enduse
+
+cellmanager minimumimage
+
+property msd
+

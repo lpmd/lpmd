@@ -1,0 +1,10 @@
+
+cell cubic 33.742
+
+input crystal3d type=bcc symbol=Fe nx=14 ny=14 nz=14
+
+output xyz file=ironball.xyz
+
+# Selecciona una esfera en el centro de la caja
+filter sphere radius=10.0 center=<16.871,16.871,16.871>
+

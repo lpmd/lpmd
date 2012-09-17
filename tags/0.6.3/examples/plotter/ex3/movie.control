@@ -1,0 +1,11 @@
+input ../final.lpmd
+antialias false
+cameraLocation <149.287,164.578,146.55>
+cameraUp <-0.704282,-0.0447841,0.708504>
+cameraLookat <54.15,54.15,45>
+background <0.25,0.35,0.8>
+camera orthographic
+radius 0.8
+box 0.1 <0,0,0>
+size  912x856
+logo Center "Cupper nanoimpact - Hanna"

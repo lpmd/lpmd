@@ -1,0 +1,11 @@
+
+cell cubic 33.742
+
+input crystal3d type=bcc symbol=Fe nx=14 ny=14 nz=14
+
+use lpvisual
+    quality 1
+enduse
+
+visualize lpvisual over box x=0-10 y=0-10 z=0-5 #inverse=true
+

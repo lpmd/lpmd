@@ -1,0 +1,20 @@
+
+set replacecell true
+
+input zlp ZrO2-100conf.zlp debug=none
+
+use setcolor as color_green
+    color <0.0,1.0,0.0>
+    debug none
+enduse
+
+use setcolor as color_red
+    color <1.0,0.0,0.0>
+    debug none
+enduse
+
+apply color_red over element symbol=O
+apply color_green over element symbol=Zr
+
+output lpmd file=test2.lpmd extra=RGB
+

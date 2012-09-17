@@ -1,0 +1,156 @@
+
+#include "../quickmode.h"
+
+@testsuite Tests de QuickMode
+
+@test Ayuda simple
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-h" };
+ qmp.Parse(2, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, ""
+}
+@end
+
+@test Modo verbose
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-v" };
+ qmp.Parse(2, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "set verbose true\n"
+}
+@end
+
+@test Ayuda de plugins
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-p", "gdr" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "use gdr as help_plugin\nenduse\n"
+}
+@end
+
+@test Option
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-O", "foo=bar,hola=mundo" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "set foo bar\nset hola mundo\n"
+}
+@end
+
+@test ReplaceCell
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-r" };
+ qmp.Parse(2, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "set replacecell true\n"
+}
+@end
+
+@test Cubic cell
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-L", "50.0" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "cell cubic a=50.0 scale=1.0\n"
+}
+@end
+
+@test Orthogonal cell
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-L", "50.0,20.0,30.0" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "cell crystal a=50.0 b=20.0 c=30.0 scale=1.0\n"
+}
+@end
+
+@test NonOrthogonal cell
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-L", "50.0,20.0,30.0", "-A", "90.0,60.0,120.0" };
+ qmp.Parse(5, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "cell crystal a=50.0 b=20.0 c=30.0 alpha=90.0 beta=60.0 gamma=120.0 scale=1.0\n"
+}
+@end
+
+@test Vector cell
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-V", "2.0,0.0,0.0,0.0,3.0,0.0,0.0,0.0,4.0" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "cell vector ax=2.0 ay=0.0 az=0.0 bx=0.0 by=3.0 bz=0.0 cx=0.0 cy=0.0 cz=4.0 scale=1.0\n"
+}
+@end
+
+@test Scale 
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-L", "5.0,2.0,3.0", "-S", "10.0" };
+ qmp.Parse(5, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "cell crystal a=5.0 b=2.0 c=3.0 scale=10.0\n"
+}
+@end
+
+@test Input
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-i", "xyz:archivo.xyz,zerocm=true,level=2" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "input module=xyz archivo.xyz zerocm=true level=2\n"
+}
+@end
+
+@test Quotes protecting parameters
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-i", "vasp:file=POSCAR,species=\"Ti,Ga,N\"" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "input module=vasp file=POSCAR species=Ti,Ga,N\n"
+}
+@end
+
+@test Output
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-o", "lpmd:archivo.lpmd,level=0" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "output module=lpmd archivo.lpmd level=0\n"
+}
+@end
+
+@test Use
+{
+ QuickModeParser qmp("# use");
+ const char * argv[] = { "lpmd", "-u", "gdr:rcut=7.0,bins=200,output=gdr.dat" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "use gdr\nrcut 7.0\nbins 200\noutput gdr.dat\nenduse\n# use gdr\n"
+}
+@end
+
+@test Cellmanager
+{
+ QuickModeParser qmp("test");
+ const char * argv[] = { "lpmd", "-c", "linkedcell:cutoff=7.0,nx=7,ny=7,nz=7" };
+ qmp.Parse(3, argv);
+ std::string control = qmp.FormattedAsControlFile();
+ @equal control, "use linkedcell\ncutoff 7.0\nnx 7\nny 7\nnz 7\nenduse\ncellmanager linkedcell\n"
+}
+@end
+
+

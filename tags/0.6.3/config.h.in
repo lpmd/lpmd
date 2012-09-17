@@ -1,0 +1,13 @@
+/*
+ *
+ *
+ *
+ */
+
+#ifndef __LPMDUTILS_CONFIG_H__
+#define __LPMDUTILS_CONFIG_H__
+
+#define VERSION "$(version)"
+
+#endif
+
