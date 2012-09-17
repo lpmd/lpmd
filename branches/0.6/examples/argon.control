@@ -1,0 +1,43 @@
+
+cell cubic 17.1191
+input crystal3d type=fcc symbol=Ar nx=3 ny=3 nz=3
+output xyz output.xyz each=10
+
+steps 5000
+
+monitor step,total-energy,temperature start=0 end=-1 each=100
+#average total-energy,temperature,pressure interval=500 start=0 end=-1 each=10
+
+prepare temperature t=10.0
+
+use lennardjones
+    sigma 3.41
+    epsilon 0.0103408
+    cutoff 8.5
+enduse
+
+use beeman as integ
+    dt 1.0
+enduse
+
+use minimumimage
+    cutoff 8.0
+enduse
+
+use gdr
+    rcut 10.0
+    output gdr.dat
+enduse
+
+use tempscaling
+    from 10.0
+    to 140.0
+enduse
+
+cellmanager minimumimage
+
+potential lennardjones Ar Ar
+integrator integ
+apply tempscaling each=250
+property gdr each=100
+

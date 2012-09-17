@@ -1,0 +1,388 @@
+
+#include "../controlparser.h"
+#include <lpmd/moduleinfo.h>
+#include <lpmd/pluginmanager.h>
+
+@testsuite Tests de UtilityControl
+
+@test Tipo de celda cubic
+{
+ std::string data = "#\n#\n#\n";
+ data += "cell cubic 17.1191\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["cell-type"], "cubic"
+ @approx double(uc["cell-a"]), 17.1191, 1.0E-10
+}
+@end
+
+@test Tipo de celda crystal
+{
+ std::string data = "#\n#\n#\n";
+ data += "cell crystal 17.1191 17.1191 17.1191 90.0 90.0 90.0\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["cell-type"], "crystal"
+ @approx double(uc["cell-a"]), 17.1191, 1.0E-10
+ @approx double(uc["cell-b"]), 17.1191, 1.0E-10
+ @approx double(uc["cell-c"]), 17.1191, 1.0E-10
+ @approx double(uc["cell-alpha"]), 90.0, 1.0E-10
+ @approx double(uc["cell-beta"]), 90.0, 1.0E-10
+ @approx double(uc["cell-gamma"]), 90.0, 1.0E-10
+}
+@end
+
+@test Tipo de celda vector
+{
+ std::string data = "#\n#\n#\n";
+ data += "cell vector 17.1191 0.0 0.0 0.0 17.1191 0.0 0.0 0.0 17.1191\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["cell-type"], "vector"
+ @approx double(uc["cell-ax"]), 17.1191, 1.0E-10
+ @approx double(uc["cell-by"]), 17.1191, 1.0E-10
+ @approx double(uc["cell-cz"]), 17.1191, 1.0E-10
+ @approx double(uc["cell-ay"]), 0.0, 1.0E-10
+ @approx double(uc["cell-az"]), 0.0, 1.0E-10
+ @approx double(uc["cell-bx"]), 0.0, 1.0E-10
+ @approx double(uc["cell-bz"]), 0.0, 1.0E-10
+ @approx double(uc["cell-cx"]), 0.0, 1.0E-10
+ @approx double(uc["cell-cy"]), 0.0, 1.0E-10
+}
+@end
+
+@test Valores por defecto
+{
+ std::string data = "#\n#\n#\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @assert bool(uc["periodic-x"])
+ @assert bool(uc["periodic-y"])
+ @assert bool(uc["periodic-z"])
+ @assert !bool(uc["replacecell"])
+ @approx double(uc["cell-scale"]), 1.0, 1.0E-10
+}
+@end
+
+@test Periodicidades
+{
+ std::string data = "#\n#\n#\n";
+ data += "periodic false true false\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @assert !(bool(uc["periodic-x"]))
+ @assert bool(uc["periodic-y"])
+ @assert !(bool(uc["periodic-z"]))
+}
+@end
+
+@test CellManager
+{
+ std::string data = "#\n#\n#\n";
+ data += "cellmanager linkedcell\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["cellmanager-module"], "linkedcell"
+}
+@end
+
+@test Uso de set para setear parametros
+{
+ std::string data = "#\n#\n#\n";
+ data += "set activatefoo true\n";
+ data += "set parametro_entero 42\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @assert bool(uc["activatefoo"])
+ @equal int(uc["parametro_entero"]), 42
+}
+@end
+
+@test Potential
+{
+ std::string data = "#\n#\n#\n";
+ data += "potential lennardjones1 Ar Ar\n";
+ data += "potential lennardjones2 Kr Ar\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc.Potentials()["Ar-Ar"], "lennardjones1"
+ @equal uc.Potentials()["Kr-Ar"], "lennardjones2"
+}
+@end
+
+@test Setear enlaces
+{
+ std::string data = "#\n#\n#\n";
+ data += "bond H Cl 0.80\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @approx double(uc.Bonds()["H-Cl"]), 0.80, 1.0E-10
+}
+@end
+
+@test Agregar directorios al path de plugins
+{
+ std::string data = "#\n#\n#\n";
+ data += "plugindir /otro/path/para/plugins\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc.PluginPath().Size(), 1
+ @equal uc.PluginPath()[0], "/otro/path/para/plugins"
+}
+@end
+
+@test Bloques use
+{
+ std::string data = "#\n#\n#\n";
+ data += "use lennardjones as lj\n";
+ data += "    cutoff 8.5\n";
+ data += "    sigma 3.41\n";
+ data += "    epsilon 0.0103408\n";
+ data += "enduse\n";
+ data += "use pairdistances\n";
+ data += "    rcut 2.5\n";
+ data += "enduse\n";
+
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ Array<ModuleInfo> & plugins = uc.Plugins();
+ @equal plugins.Size(), 2
+ @equal plugins[0].name, "lennardjones"
+ @equal plugins[0].id, "lj"
+ @equal plugins[0].args, "cutoff 8.5 sigma 3.41 epsilon 0.0103408"
+ @equal plugins[1].name, "pairdistances"
+ @equal plugins[1].id, "pairdistances"
+ @equal plugins[1].args, "rcut 2.5"
+}
+@end
+
+@test Instruccion input
+{
+ std::string data = "#\n#\n#\n";
+ data += "input crystal3d type=fcc symbol=Ar nx=3 ny=3 nz=3\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["input-modules"], "crystal3d "
+ Array<ModuleInfo> & plugins = uc.Plugins();
+ bool plugin_notfound = true;
+ for (int q=0;q<plugins.Size();++q)
+ {
+  if (plugins[q].id == "input1") 
+  {
+   plugin_notfound = false;
+   @equal plugins[q].name, "crystal3d"
+   @equal plugins[q].args, "type fcc symbol Ar nx 3 ny 3 nz 3"
+  }
+ }
+ @assert !(plugin_notfound)
+}
+@end
+
+@test Instruccion output
+{
+ std::string data = "#\n#\n#\n";
+ data += "output lpmd file=testfile.lpmd level=2\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["output-modules"], "lpmd "
+ Array<ModuleInfo> & plugins = uc.Plugins();
+ bool plugin_notfound = true;
+ for (int q=0;q<plugins.Size();++q)
+ {
+  if (plugins[q].id == "output1") 
+  {
+   plugin_notfound = false;
+   @equal plugins[q].name, "lpmd"
+   @equal plugins[q].args, "file testfile.lpmd level 2"
+  }
+ }
+ @assert !(plugin_notfound)
+}
+@end
+
+@test Instruccion prepare
+{
+ std::string data = "#\n#\n#\n";
+ data += "prepare temperature t=300.0\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["prepare-modules"], "temperature "
+ Array<ModuleInfo> & plugins = uc.Plugins();
+ bool plugin_notfound = true;
+ for (int q=0;q<plugins.Size();++q)
+ {
+  if (plugins[q].id == "prepare1") 
+  {
+   plugin_notfound = false;
+   @equal plugins[q].name, "temperature"
+   @equal plugins[q].args, "t 300.0"
+  }
+ }
+ @assert !(plugin_notfound)
+}
+@end
+
+@test Instruccion filter
+{
+ std::string data = "#\n#\n#\n";
+ data += "filter sphere radius=5.0 center=10.0,10.0,10.0\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["filter-modules"], "sphere "
+ Array<ModuleInfo> & plugins = uc.Plugins();
+ bool plugin_notfound = true;
+ for (int q=0;q<plugins.Size();++q)
+ {
+  if (plugins[q].id == "filter1") 
+  {
+   plugin_notfound = false;
+   @equal plugins[q].name, "sphere"
+   @equal plugins[q].args, "radius 5.0 center 10.0,10.0,10.0"
+  }
+ }
+ @assert !(plugin_notfound)
+}
+@end
+
+@test Instruccion property
+{
+ std::string data = "#\n#\n#\n";
+ data += "use pairdistances\n";
+ data += "enduse\n";
+ data += "use pairdistances as pd2\n";
+ data += "enduse\n";
+ data += "property pairdistances start=0 end=1000 each=50\n";
+ data += "property pd2 start=0 end=1000 each=50\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["property-modules"], "pairdistances pd2 "
+}
+@end
+
+@test Instruccion apply
+{
+ std::string data = "#\n#\n#\n";
+ data += "use rotate\n";
+ data += "enduse\n";
+ data += "use rotate as rot2\n";
+ data += "enduse\n";
+ data += "apply rotate start=0 end=1000 each=50\n";
+ data += "apply rot2 start=0 end=1000 each=50\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["apply-modules"], "rotate rot2 "
+}
+@end
+
+@test Instruccion visualize
+{
+ std::string data = "#\n#\n#\n";
+ data += "use printatoms\n";
+ data += "enduse\n";
+ data += "use printatoms as pt2\n";
+ data += "enduse\n";
+ data += "visualize printatoms start=0 end=1000 each=50\n";
+ data += "visualize pt2 start=0 end=1000 each=50\n";
+ 
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["visualize-modules"], "printatoms pt2 "
+}
+@end
+
+@test Instruccion monitor
+{
+ std::string data = "#\n#\n#\n";
+ data += "monitor step,potential-energy,temperature start=10 end=700 each=50\n";
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["visualize-modules"], "monitor "
+}
+@end
+
+@test Instruccion average
+{
+ std::string data = "#\n#\n#\n";
+ data += "average potential-energy,temperature interval=1500 start=10 end=7000 each=50\n";
+ ParamList opts;
+ PluginManager pm;
+ UtilityControl uc(pm);
+ std::istringstream istr(data);
+ uc.Read(istr, opts, "prueba");
+ @equal uc["visualize-modules"], "average "
+}
+@end
+

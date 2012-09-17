@@ -1,0 +1,6 @@
+set replacecell true
+input module=lpmd file=quartz.lpmd
+
+output module=lpmd file=output-element.lpmd extra=rgb
+
+filter element symbol=O

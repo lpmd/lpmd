@@ -1,0 +1,39 @@
+# 18.075/5 = 3.6149 = lattice parameter of Cu.
+cell crystal 18.175
+input crystal3d type=fcc symbol=Cu nx=5 ny=5 nz=5
+
+output module=lpmd file=cu-output.lpmd level=2 each=50
+monitor step,kinetic-energy,potential-energy,total-energy,temperature,pressure,volume,density,momentum,px,py,pz,virial-pressure,kinetic-pressure start=0 each=50 end=-1 output=properties.dat
+
+prepare temperature t=300
+
+steps 20000
+
+#Modules Declaration
+use velocityverlet
+ dt 1.0
+enduse
+
+use suttonchen 
+ e 0.015713 
+ n 9.0
+ m 6.0 
+ a 3.61 
+ c 39.755
+ cutoff 6.0 
+enduse
+
+use linkedcell 
+ cutoff 7.0 
+ mode auto 
+enduse
+
+use tempscaling
+ from 300.0
+ to 300.0
+enduse
+#Potencial Apply
+potential suttonchen Cu Cu
+integrator velocityverlet
+cellmanager linkedcell
+apply tempscaling start=0 end=10000 each=200

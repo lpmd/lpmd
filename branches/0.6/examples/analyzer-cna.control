@@ -1,0 +1,28 @@
+
+cell cubic 17.1191
+input xyz output.xyz inside=true
+
+#use linkedcell
+#    cutoff 8.0
+#    nx 7
+#    ny 7
+#    nz 7
+#enduse
+
+use minimumimage
+    cutoff 8.0
+    debug none
+enduse
+
+use cna
+    rcut 4.6
+    output cna.dat
+    average false
+    debug none
+enduse
+
+#cellmanager linkedcell
+cellmanager minimumimage
+
+property cna start=0 end=500 each=1
+

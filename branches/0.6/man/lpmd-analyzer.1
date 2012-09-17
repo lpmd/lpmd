@@ -1,0 +1,179 @@
+.TH "LPMD-ANALYZER" "1" "0.6" "GNM" "LPMD User's Reference Manual"
+.SH "NAME"
+lpmd\-analyzer \- computes physical properties from molecular dynamics simulation data
+.SH "SYNOPSIS"
+.B lpmd\-analyzer
+[\fI\-v\fR] [\fI\-L a,b,c\fR] [\fI\-A alpha,beta,gamma\fR] [\fI\-V ax,ay,az,bx,by,bz,cx,cy,cz\fR] [\fI\-S value\fR] [\fI\-O variable=value\fR,...] [\fI\-i plugin:opt1,opt2,...\fR] [\fI\-o plugin:opt1,opt2,...\fR] [\fI\-u plugin:opt1,opt2,...\fR] [\fI\-c plugin:opt1,opt2,...\fR] [\fI\-r\fR] [\fIcontrol\-file\fR]
+.br 
+.B lpmd\-analyzer
+\-p \fIplugin\-name\fR
+.br 
+.B lpmd\-analyzer
+\-h
+.SH "DESCRIPTION"
+.PP 
+\fBLPMD\fR, Las Palmeras Molecular Dynamics, is a modular molecular dynamics simulation package, 
+based completely on plugins. 
+The \fBlpmd\-analyzer\fR command reads atomic positions (and optionally velocities) from a data file, then computes the selected physical properties. It reads a \fIcontrol\-file\fR containing the 
+description of the system being analyzed and its parameters.
+If the \fB\-p\fR option is given, no analysis is performed. Instead, \fBlpmd\-analyzer\fR shows information about the intended use, current version, capabilities and parameters supported for a given plugin module.
+.TP 
+\fB\-v\fR, \fB\-\-verbose\fR
+increases the verbosity of the analysis output by one level
+.TP
+\fB\-L\fR, \fB\-\-lengths\fR
+specifies all three lengths defining the size of the simulation box.
+.TP
+\fB\-A\fR, \fB\-\-angles\fR
+specifies all three angles defining the shape of the simulation box.
+.TP
+\fB\-V\fR, \fB\-\-vector\fR
+specifies all nine components of the three cell vectors defining the size and shape of the simulation box.
+.TP
+\fB\-S\fR, \fB\-\-scale\fR
+specifies a scale factor, to be applied to all lengths (if using \fB\-L\fR) or vectors (if using \fB\-V\fR).
+.TP
+\fB\-i\fR, \fB\-\-input\fR
+loads an input plugin with parameters \fBopt1\fR, \fBopt2\fR, etc. Equivalent to the \fBinput\fR statement in a control file
+.TP
+\fB\-o\fR, \fB\-\-output\fR
+loads an output plugin with parameters \fBopt1\fR, \fBopt2\fR, etc. Equivalent to the \fBoutput\fR statement in a control file
+.TP
+\fB\-u\fR, \fB\-\-use\fR
+loads an arbitrary plugin (property, modifier, visualizer) with parameters \fBopt1\fR, \fBopt2\fR, etc. Equivalent to the \fBuse\fR block in a control file
+.TP
+\fB\-c\fR, \fB\-\-cellmanager\fR
+loads a cellmanager plugin with parameters \fBopt1\fR, \fBopt2\fR, etc. Equivalent to the \fBcellmanager\fR statement in a control file
+.TP
+\fB\-r\fR, \fB\-\-replace-cell\fR
+when this option is used, the information defining the size and shape of the simulation box given by the input plugin replaces the information given by the \fBcell\fR statement or the \fB\-L\fR, \fB\-A\fR and \fB\-V\fR flags
+.TP 
+\fB\-O\fR, \fB\-\-option\fR
+replaces all instances of $(\fIvariable\fR) by \fIvalue\fR in the \fIcontrol\-file\fR before running
+.TP 
+\fB\-p\fR, \fB\-\-pluginhelp\fR
+shows help about \fIplugin\-name\fR
+.TP 
+\fB\-h\fR, \fB\-\-help\fR
+displays help and version information, and exits
+.SH "CONTROL FILE FORMAT"
+.PP 
+The syntax of the control file format recognizes two kinds of elements, \fBone\-line statements\fR and \fBblocks\fR. 
+
+.PP 
+A one\-line statement has the structure:
+.TP 
+\fBstatement\fR [[\fIparameter\fR = ]\fIvalue\fR] [[\fIparameter\fR = ]\fIvalue\fR] [...]
+
+.PP 
+While a block has the following structure:
+.TP 
+\fBblock\-statement\fR \fIparameter\fR [OPTIONS]
+.TP 
+   \fIkeyword\fR \fIvalue\fR
+.TP 
+   \fIkeyword\fR \fIvalue\fR
+   ...
+.TP 
+\fBend\-of\-block\-statement\fR
+.SH "ONE-LINE STATEMENTS"
+.PP 
+Currently, the one\-line statements understood by \fBlpmd\-analyzer\fR are: \fBset\fR, \fBcell\fR, 
+\fBinput\fR, \fBplugindir\fR, \fBinclude\fR, \fBperiodic\fR, \fBprepare\fR, \fBcellmanager\fR, \fBpotential\fR, and \fBproperty\fR.
+
+.TP 
+\fBset\fR \fIoption\-flag\fR \fIvalue\fR
+.TP 
+	sets the value of the global option \fIoption\-flag\fR to \fIvalue\fR  
+
+.TP 
+\fBcell\fR crystal \fIa\fR \fIb\fR \fIc\fR \fIalpha\fR \fIbeta\fR \fIgamma\fR
+.TP 
+	defines the geometry of the simulation cell using six crystallographic parameters
+
+.TP 
+\fBcell\fR cubic \fIa\fR
+.TP 
+	defines the geometry of the simulation cell as a cubic cell, using just one length (i.e., a=b=c).
+
+.TP 
+\fBcell\fR vector \fIax\fR \fIay\fR \fIaz\fR \fIbx\fR \fIby\fR \fIbz\fR \fIcx\fR \fIcy\fR \fIcz\fR
+.TP 
+	defines the geometry of the simulation cell using three vectors, three components each
+
+.TP 
+\fBinput\fR \fImodule\fR \fIplugin\-option\-value\fR ... 
+.TP 
+	selects the plugin \fImodule\fR (which must be a CellGenerator plugin) for reading or constructing the initial positions (and optionally, velocities) of the atoms in the simulation cell. The parameters following \fImodule\fR are passed literally as options for the plugin
+
+.TP 
+\fBplugindir\fR \fIdir\fR
+.TP 
+	adds the directory \fIdir\fR to the plugin search path, so any additional plugins in that directory can be recognized by \fBlpmd\fR and loaded in a simulation
+
+.TP 
+\fBinclude\fR \fIinputfile\fR
+.TP 
+	includes the contents of file \fIinputfile\fR in the control file
+
+.TP 
+\fBperiodic\fR \fIx\fR \fIy\fR \fIz\fR
+.TP 
+	enables or disables periodic boundary conditions on the given axis. By default periodicity is enabled on all three axes
+
+.TP 
+\fBprepare\fR \fImodule\fR \fIplugin\-option\-value\fR ...
+.TP 
+	applies a SystemModifier plugin \fImodule\fR to the system before calculating properties. For example, one to set the initial temperature of the system, or to rescale the simulation box. The parameters following \fImodule\fR are passed literally as options for the plugin
+
+.TP 
+\fBcellmanager\fR \fImodule\fR
+.TP 
+	uses the CellManager plugin \fImodule\fR for handling calculations of neighbor distances
+
+.TP 
+\fBpotential\fR \fImodule\fR \fIa\fR \fIb\fR
+.TP 
+	assigns the Potential plugin \fImodule\fR to handle the interaction between the species \fIa\fR and \fIb\fR (denoted by atomic symbols, such as Cu or Ar)
+
+.TP 
+\fBproperty\fR \fImodule\fR
+.TP 
+	adds the InstantProperty plugin \fImodule\fR to the list of properties computed during the analysis
+
+.SH "BLOCK STATEMENTS"
+.PP 
+The only block\-statement understood by \fBlpmd\-analyzer\fR is \fBuse\fR, which is used to load a plugin and specify its options.
+
+.TP 
+\fBuse\fR \fIplugin\fR [as \fIalias\fR]
+.TP 
+   \fIplugin\-option\fR \fIvalue\fR
+.TP 
+   \fIplugin\-option\fR \fIvalue\fR
+.TP 
+   ...
+.TP 
+\fBenduse\fR
+
+.SH "AUTHOR"
+Grupo de Nanomateriales, 
+.B http://www.gnm.cl/
+.SH "REPORTING BUGS"
+Report bugs to <lpmd@gnm.cl>.
+.SH "COPYRIGHT"
+Copyright \(co 2008 Free Software Foundation, Inc.
+.br 
+This is free software.  You may redistribute copies of it under the terms of
+the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.
+There is NO WARRANTY, to the extent permitted by law.
+.SH "SEE ALSO"
+lpmd(1), lpmd\-converter(1).
+.br 
+.br 
+The user manual for
+.B lpmd
+is included as a PDF file together with the source packages.
+You can also look up 
+.B http://www.gnm.cl/lpmd/
+for more information
