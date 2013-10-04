@@ -3,146 +3,94 @@
 #
 
 name = lpmd
-fullname = 'LPMD'
-version = 0.6.3
+fullname = 'lpmd'
+version = 0.7.0
 author = 'GNM <gnm@gnm.cl>'
 prefix = /usr/local
+mainfirst = true
 
 language c++
-ifdef intel
-   compiler = icpc
-   linker = icpc -Wall -O3 -axSSE4.1 -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -lpthread
-   flags =-g -Wall -O3 -axSSE4.1 -openmp -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -lpthread -lguide
-   ifdef openmp
-    openmpflags = -openmp
+
+   ifdef intel
+    compiler = mpiCC
+    linker = mpiCC
+    flags = -Wall -O3 -axSSE4.1 -parallel -diag-disable remark -finline-functions -DNDEBUG  -fPIC -I.
+    ifdef openmp
+     openmpflags = -openmp
+    endif
+   else
+    compiler = mpiCC
+    linker = mpiCC -fPIC
+    flags = -g -Wall -O3 -ffast-math -funroll-all-loops -finline-functions -fPIC -std=gnu++98 -I.
+    ifdef openmp
+     openmpflags = -fopenmp
+     endif
    endif
-else
-   compiler = g++
-   linker = g++
-   flags = -g -Wall -O3 -ffast-math -funroll-all-loops -finline-functions -std=gnu++98
-   ifdef openmp
-    openmpflags = -fopenmp
-   endif
-endif
+
 end
 
-language lpunit
-   compiler = lpmaketest
-end
+language c
 
-language python
-   compiler = python
+   ifdef intel
+    compiler = icc
+   else
+    compiler = gcc
+   endif
+
+   ifdef intel 
+    flags = -Wall -O3 -std=c99 -fast -diag-disable remark -DNDEBUG -fPIC
+   else 
+    flags = -g -Wall -O3 -ffast-math -finline-functions -fPIC -std=c99
+   endif
+
+   ifdef intel
+    linker = icc
+   else
+    linker = gcc
+   endif
+
 end
 
 directory .
-    staticlibrary liblpmdutility
-       language = c++
-       sources = controlparser.cc quickmode.cc replayintegrator.cc refsimulation.cc application.cc autotest.cc help.cc palmtree.cc
-       pkgconfig += liblpmd-2.0
-       installpath = lib
-    end
 
-    file config.h
-       sources = config.h.in
-       expand = version
-    end
-
-    binary lpmd
-       language = c++
-       sources = lpmd.cc
-       installpath = bin
-       pkgconfig += liblpmd-2.0
-       libraries += liblpmdutility.a
-    end
-
-    binary lpmd-analyzer
-       language = c++
-       sources = analyzer.cc
-       installpath = bin
-       pkgconfig += liblpmd-2.0
-       libraries += liblpmdutility.a
-    end
-
-    binary lpmd-converter
-       language = c++
-       sources = converter.cc
-       installpath = bin
-       pkgconfig += liblpmd-2.0
-       libraries += liblpmdutility.a
-    end
-
-    binary lpmd-visualizer
-       language = c++
-       sources = visualizer.cc
-       installpath = bin
-       pkgconfig += liblpmd-2.0
-       libraries += liblpmdutility.a
-    end
-
-    binary lpmd-plotter
-       language = python
-       sources = lpmd-plotter.py
-       installpath = bin
-    end
-
-    binary makeframes.py
-       language = python
-       sources = lpplotter/makeframes.py
-       ifdef prefix
-        installpath = $(prefix)/lib/lpplotter/
-       else
-        installpath = $(PYTHONLIB)/lpplotter/
-       endif
-    end
-
-    binary povscene.py
-       language = python
-       sources = lpplotter/povscene.py
-       ifdef prefix
-        installpath = $(prefix)/lib/lpplotter/
-       else
-        installpath = $(PYTHONLIB)/lpplotter/
-       endif
-    end
-
-    binary parselpmd2.py
-       language = python
-       sources = lpplotter/parselpmd2.py
-       ifdef prefix
-        installpath = $(prefix)/lib/lpplotter/
-       else
-        installpath = $(PYTHONLIB)/lpplotter/
-       endif
-    end
-
-    binary __init__.py
-       language = python
-       sources = lpplotter/__init__.py
-       ifdef prefix
-        installpath = $(prefix)/lib/lpplotter/
-       else
-        installpath = $(PYTHONLIB)/lpplotter/
-       endif
-    end
-end
-
-directory tests
-
-   binary controlparser
-      test = true
-      language = lpunit
-      sources = controlparser.unit
-      libraries += ../liblpmdutility.a
-      pkgconfig += lpunit liblpmd-2.0
-   end
-
-   binary quickmode
-      test = true
-      language = lpunit
-      sources = quickmode.unit
-      libraries += ../liblpmdutility.a
-      pkgconfig += lpunit liblpmd-2.0
+   binary lpmd-testing
+      language = python
+      sources = lpmd.py
+      installpath = bin
    end
 
 end
 
+directory lphandler
+   
+   file ControlFile.py
+      language = python
+      sources = ControlFile.py
+      ifdef prefix
+       installpath = $(prefix)/lib/lphandler
+      else
+       installpath = $(PYTHONLIB)/lphandler
+      endif
+   end
+
+   file QuickMode.py
+      language = python
+      sources = QuickMode.py
+      ifdef prefix
+       installpath = $(prefix)/lib/lphandler
+      else
+       installpath = $(PYTHONLIB)/lphandler
+      endif
+   end
+
+   file __init__.py
+      language = python
+      sources = __init__.py
+      ifdef prefix
+       installpath = $(prefix)/lib/lphandler
+      else
+       installpath = $(PYTHONLIB)/lphandler
+      endif
+   end
+
+end

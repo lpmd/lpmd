@@ -1,0 +1,45 @@
+
+cell cubic 57.036
+input module=fcc symbol=Ar nx=10 ny=10 nz=10 a=5.7036
+output module=xyz file=output.xyz each=10 start=0 end=-1
+
+monitor step,total-energy,temperature start=0 end=-1 each=10
+
+steps 5000
+
+prepare temperature t=300.0
+
+use lennardjones
+    sigma 3.41
+    epsilon 0.0103408
+    cutoff 8.5
+enduse
+
+use velocityverlet
+    dt 1.0
+enduse
+
+use linkedcell
+    cutoff 8.5
+    nx 15
+    ny 15
+    nz 15
+enduse
+
+use test
+    output una_matriz.dat
+enduse
+
+use settag
+    key un_tag_cualquiera
+    value true
+enduse
+
+cellmanager linkedcell
+
+potential lennardjones Ar Ar
+integrator velocityverlet
+
+apply settag start=0 end=-1 each=50
+property test start=10 end=200 each=20
+

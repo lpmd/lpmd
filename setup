@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os.path, os, sys
 from copy import deepcopy
@@ -10,16 +10,17 @@ defaultPrefix = '/usr/local'
 defaultInstall = 'install'
 pythonlib = [x for x in sys.path if 'python%d.%d' % (sys.version_info[0:2]) in x and 'pymodules' not in x][0]
 
-defaultLanguages = ['c', 'c++', 'd', 'python', 'lpunit']
+defaultLanguages = ['c', 'c++', 'd', 'python', 'lpunit', 'plugcode']
 
-compiledLanguages = ['c', 'c++', 'd', 'lpunit']
+compiledLanguages = ['c', 'c++', 'd', 'lpunit', 'plugcode']
 
-headerExtensions = { 'c': ['h'] , 'c++': ['h', 'hpp'], 'd': [], 'lpunit': ['h', 'hpp'] }
+headerExtensions = { 'c': ('h',) , 'c++': ('h', 'hpp'), 'd': (), 'lpunit': ('h', 'hpp'), 'plugcode': () }
 
 languageCompilation = { 'c++': '%(compiler)s %(compilerflags)s -c %(source)s -o %(object)s',
                         'c': '%(compiler)s %(compilerflags)s -c %(source)s -o %(object)s',
                         'd': '%(compiler)s %(compilerflags)s -c %(source)s -o %(object)s',
-                        'lpunit': '%(compiler)s %(source)s - | g++ %(compilerflags)s -x c++ -c -o %(object)s -' }
+                        'lpunit': '%(compiler)s %(source)s - | %(cpp_compiler)s %(compilerflags)s -x c++ -c -o %(object)s -',
+                        'plugcode': '%(compiler)s %(source)s - | %(c_compiler)s %(compilerflags)s -x c -c -o %(object)s -' }
 
 languageStaticLibraryPacking  = { 'c++': 'ar rcs %(target)s %(object)s',
                                   'c': 'ar rcs %(target)s %(object)s',
@@ -123,8 +124,8 @@ class Item:
 
 class Language(Item):
 
-    def __init__(self, name, **kwargs):
-        self.name = name
+    def __init__(self, name, setup, **kwargs):
+        self.name, self.setup = name, setup
         if self.IsCompiled(): 
            self.compiler = defaultCompiler[name]
            self.libraries = ''
@@ -146,7 +147,7 @@ class Language(Item):
 
     def SourcesIncludedIn(self, filename, includedirs):
         inc = []
-        for line in file(filename, 'r'):
+        for line in open(filename, 'r'):
             line = line.strip()
             if line.startswith('#include'):
                remainder = line[8:].strip()
@@ -155,9 +156,9 @@ class Language(Item):
                   if includedname not in inc: inc.append(includedname)
                elif remainder.startswith('<') and remainder.endswith('>'):
                   includedname = remainder[1:-1]
-                  if includedname not in inc: 
-                     for d in includedirs: 
-                         if os.path.exists(os.path.join(d, includedname)): inc.append(os.path.join(d, includedname))
+                  if includedname not in inc:
+                     for d in includedirs:
+                         if os.path.exists(os.path.join(d, includedname)): inc.append(os.path.abspath(os.path.join(d, includedname)))
                else: assert False
         return inc
  
@@ -177,8 +178,10 @@ class Language(Item):
         compilableSources = [x for x in sources if self.IsFileCompilable(x)]
         installname = target.name
         if hasattr(target, 'installname') and target.installname != '': installname = target.installname
-        return pattern % {'target': installname, 'compiler': target.compiler, 'linkflags': target.libraries, 
-                          'compilerflags': target.flags, 'linker': target.linker, 
+        return pattern % {'target': installname, 'cpp_compiler': self.setup.language['c++'].compiler, 
+                          'c_compiler': self.setup.language['c'].compiler,
+                          'compiler': self.setup.actualpath[target.compiler] if target.compiler in self.setup.actualpath else target.compiler, 
+                          'linkflags': target.libraries, 'compilerflags': target.flags, 'linker': target.linker, 
                           'source': ' '.join(compilableSources), 'prefix': target.setup.prefix, 'object': ' '.join(objects)}
 
 class Target(Item):
@@ -312,6 +315,7 @@ class Directory(dict):
         makefile = Makefile()
         if hasattr(self.setup, 'version'): makefile.AddVariable('VERSION', '\"%s\"' % self.setup.version)
         makefile.AddVariable('TARGETS', ' '.join([z for z in self.sortedtargets if not hasattr(self[z], 'test') or not self[z].test]))
+        makefile.AddVariable('CLEANABLE_TARGETS', ' '.join([z for z in self.sortedtargets if (self[z].targettype not in ('script', 'file', 'headers')) and (not hasattr(self[z], 'test') or not self[z].test)]))
         mf += makefile.Render()
         if len(subdirs) > 0:
            makefile = Makefile()
@@ -341,7 +345,7 @@ class Directory(dict):
         mf += '\n'
         ldconfig_libs = []
         for t in self.sortedtargets:
-            if hasattr(self[t], 'installpath'):
+            if hasattr(self[t], 'installpath') and self[t].targettype != 'script':
                realtarget = [ t ]
                if self[t].targettype == 'headers': realtarget = self[t].sources
                elif hasattr(self[t], 'installname'): realtarget = [ self[t].installname ]
@@ -378,13 +382,13 @@ class Directory(dict):
                #
                # Non-compilable targets 
                #
-               mf += ('%s: %s\n' % (t, ' '.join(dependencies)))
+               mf += ('%s: %s\n' % (t, ' '.join(z for z in dependencies if z != t)))
                if hasattr(self[t], 'expand'):
                   varstoexpand = self[t].expand.split()
                   varexpr = ','.join([('%s=%s' % (x, getattr(self.setup, x))) for x in varstoexpand])
                   mf += ('\tcat %s | %s --expand=\"%s\" > %s\n' % (' '.join(dependencies), setuppath, varexpr, t))
-               elif self[t].targettype == 'headers': mf += '\n'
-               else: 
+               elif self[t].targettype in ('headers', 'file'): mf += '\n'
+               else:
                   if len(dependencies) == 1 and dependencies[0] == t: mf += '\n\n'
                   else: mf += ('\tcat %s > %s\n' % (' '.join(dependencies), t))
                if self[t].targettype == 'script': mf += ('\tchmod "u+x" %s\n' % t)
@@ -454,20 +458,20 @@ class Directory(dict):
            else:
               makefile.AddPhonyTarget('check', checktargets, [('- ./'+x) for x in checktargets])
            makefile.AddPhonyTarget('subdirs-clean', [], [('cd %s && $(MAKE) clean' % d) for d in subdirs])
-           makefile.AddPhonyTarget('clean', ['subdirs-clean'], 'rm -f $(TARGETS) %s' % (' '.join(cleanables)))
+           makefile.AddPhonyTarget('clean', ['subdirs-clean'], 'rm -f $(CLEANABLE_TARGETS) %s' % (' '.join(cleanables)))
            makefile.AddPhonyTarget('subdirs-uninstall', [], [('cd %s && $(MAKE) uninstall' % d) for d in subdirs])
         else:
            makefile.AddPhonyTarget('check', checktargets, [('- ./'+x) for x in checktargets])
-           makefile.AddPhonyTarget('clean', [], 'rm -f $(TARGETS) %s' % (' '.join(cleanables)))
+           makefile.AddPhonyTarget('clean', [], 'rm -f $(CLEANABLE_TARGETS) %s' % (' '.join(cleanables)))
         mf += makefile.Render()
         return mf
 
 class SetupHandler:
 
-    language, directory = { }, { }
+    language, directory, actualpath = { }, { }, { }
 
-    def __getdirectories(self): return self.directory.keys()
-    def __getlanguages(self): return self.language.keys()
+    def __getdirectories(self): return list(self.directory.keys())
+    def __getlanguages(self): return list(self.language.keys())
     directories = property(__getdirectories, None)
     languages = property(__getlanguages, None)
 
@@ -475,6 +479,7 @@ class SetupHandler:
         self.ignore = []
         self.prefix = defaultPrefix
         self.install = defaultInstall
+        self.topsrc = os.getcwd()
         self.mainfirst = False
         self.openmp = False
         for opt in options:
@@ -488,7 +493,7 @@ class SetupHandler:
         for thing in os.listdir('/usr/lib'):
             dirthing = os.path.join('/usr/lib', thing)
             if os.path.isdir(dirthing): self.AddToLibraryPath(dirthing)
-        for lang in defaultLanguages: self.language[lang] = Language(lang)
+        for lang in defaultLanguages: self.language[lang] = Language(lang, self)
         self.ParsePackageSetup(psetup, options)
         self.fulloptions = options.fulloptions 
         #
@@ -507,11 +512,11 @@ class SetupHandler:
         global librarySharedFlags, moduleSharedFlags, languageLinking, openmpFlags, openmpLibraries
         global librarySharedLinkerFlags, moduleSharedLinkerFlags, librarySemiNamePattern
         #
+        defaultCompiler = { 'c++': 'g++', 'd': 'gdc', 'c': 'gcc', 'lpunit': 'lpmaketest', 'plugcode': 'plugmaker' }
+        defaultLinker = { 'c++': 'g++', 'd': 'gdc', 'c': 'gcc', 'lpunit': 'g++', 'plugcode': 'gcc' }
         if not hasattr(self, 'platform'): self.CheckPlatform()
         if self.platform == 'linux':
            sys.stdout.write('* Detected Linux platform\n\n') 
-           defaultCompiler = { 'c++': 'g++', 'd': 'gdc', 'c': 'gcc', 'lpunit': 'lpmaketest' }
-           defaultLinker = { 'c++': 'g++', 'd': 'gdc', 'c': 'gcc', 'lpunit': 'g++' }
            libraryNamePattern = '%(name)s.%(extension)s.%(major)d.%(minor)d.%(revision)d'
            librarySemiNamePattern = '%(name)s.%(extension)s.%(major)d'
            libraryExtensions = ['a', 'so']
@@ -523,13 +528,12 @@ class SetupHandler:
            languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
                                'd': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
                                'c': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
-                               'lpunit': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s' }
+                               'lpunit': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s',
+                               'plugcode': '%(linker)s -o %(target)s %(object)s -Wl,-rpath,%(prefix)s/lib %(linkflags)s'}
            openmpFlags = { 'c++': '-fopenmp', 'c': '-fopenmp' }
            openmpLibraries = { 'c++': '-lgomp', 'c': '-lgomp' }
         elif self.platform == 'darwin':
            sys.stdout.write('* Detected Mac OS X platform\n\n')
-           defaultCompiler = { 'c++': 'g++', 'd': 'gdc', 'c': 'gcc', 'lpunit': 'lpmaketest' }
-           defaultLinker = { 'c++': 'g++', 'd': 'gdc', 'c': 'gcc', 'lpunit': 'g++' }
            libraryNamePattern = '%(name)s.%(major)d.%(minor)d.%(revision)d.%(extension)s'
            librarySemiNamePattern = '%(name)s.%(major)d.%(extension)s'
            libraryExtensions = ['a', 'dylib']
@@ -540,7 +544,8 @@ class SetupHandler:
            languageLinking = { 'c++': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
                                'd': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
                                'c': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
-                               'lpunit': '%(linker)s -o %(target)s %(object)s %(linkflags)s' }
+                               'lpunit': '%(linker)s -o %(target)s %(object)s %(linkflags)s',
+                               'plugcode': '%(linker)s -o %(target)s %(object)s %(linkflags)s' }
            openmpFlags = { 'c++': '-fopenmp', 'c': '-fopenmp' }
            openmpLibraries = { 'c++': '-lgomp', 'c': '-lgomp' }
         else: raise UnknownPlatform(self.platform)
@@ -570,7 +575,7 @@ class SetupHandler:
         return block
 
     def ReadLineBuffer(self, filename):
-        rawdata = file(filename, 'r').read()
+        rawdata = open(filename, 'r').read()
         while '\\\n' in rawdata:
               rawdata = rawdata.replace('\\\n', '')
         return [x for x in rawdata.split('\n') if not ignorable(x)]
@@ -639,14 +644,16 @@ class SetupHandler:
         #
         for b in self.block['blocks']:
             hspl = b.header.split()
-            if hspl[0] == 'language': self.language[hspl[1]].Update(b)
+            if hspl[0] == 'language':
+               if hspl[1] not in self.language: raise UnknownLanguage(hspl[1])
+               self.language[hspl[1]].Update(b)
             elif hspl[0] == 'directory': self.directory[hspl[1]] = Directory(self, hspl[1], b['blocks'])
 
     def CreateMakefile(self, d, subdirs):
         mf = d.RenderMakefile(subdirs)
         mfname = os.path.join(d.name, 'Makefile')
-        print '   ->', mfname 
-        file(mfname, 'w').write(mf)
+        print('   ->', mfname)
+        open(mfname, 'w').write(mf)
 
     def CheckPlatform(self):
         u = OutputFromCommand('uname -a').split()
@@ -694,9 +701,9 @@ class SetupHandler:
 
     def HaveExecutable(self, ex): 
         sys.stdout.write('   '+ex+' ')
-        expath = os.popen('PATH=/sbin:$PATH which %s' % ex, 'r').readline().strip()
+        expath = os.popen('PATH=/sbin:$PATH:%s/bin which %s' % (self.prefix, ex), 'r').readline().strip()
         if (expath != ''):
-           print '->', expath
+           print('->', expath)
            return os.path.abspath(expath)
         else: 
            sys.stdout.write('NOT FOUND\n')
@@ -708,7 +715,7 @@ class SetupHandler:
         for lpath in self.LibraryPath():
             for ext in libraryExtensions:
                 if os.path.exists(os.path.join(lpath, library+'.'+ext)):
-                   print '->', os.path.join(lpath, library+'.'+ext)
+                   print('->', os.path.join(lpath, library+'.'+ext))
                    st = True
                    break
             if st: break
@@ -727,9 +734,9 @@ class SetupHandler:
         else: 
            cflags = os.popen('pkg-config --cflags %s' % pc).readline().strip()
            libs = os.popen('pkg-config --libs %s' % pc).readline().strip()
-           if cflags.startswith('-I'): print '->', os.path.dirname(cflags.replace('-I', ''))
-           elif libs.startswith('-L'): print '->', os.path.dirname(libs.replace('-L', ''))
-           else: print '->', cflags+' '+libs
+           if cflags.startswith('-I'): print('->', os.path.dirname(cflags.replace('-I', '')))
+           elif libs.startswith('-L'): print('->', os.path.dirname(libs.replace('-L', '')))
+           else: print('->', cflags+' '+libs)
         return st
 
     def Setup(self):
@@ -749,42 +756,42 @@ class SetupHandler:
                     sfile = os.path.join(d, s)
                     if not os.path.abspath(sfile) in genfiles and not os.path.exists(sfile) and sfile not in self.ignore:
                        raise MissingComponent('source file', sfile)
-        print 'OK'
-        print '* Checking for compilers:'
+        print('OK')
+        print('* Checking for compilers:')
         for comp in self.RequiredCompilers(): 
             if comp.startswith('./') or comp.startswith('../'): continue
             ans = self.HaveExecutable(comp)
             if ans == None and comp not in self.ignore: raise MissingComponent('compiler', comp)
             self.actualpath[comp] = ans
-        if self.openmp: print '\n* Using OpenMP directives'
-        print '\n* Checking for other utilities:'
+        if self.openmp: print('\n* Using OpenMP directives')
+        print('\n* Checking for other utilities:')
         for ut in self.RequiredUtilities():
             ans = self.HaveExecutable(ut)
             if ans == None and ut not in self.ignore: raise MissingComponent('utility', ut)
             self.actualpath[ut] = ans
         if 'pkg-config' in self.RequiredUtilities():
            os.environ['PKG_CONFIG_PATH'] = os.path.join(self.prefix, 'lib/pkgconfig')+':'+os.getenv('PKG_CONFIG_PATH', '')
-           print '\n* Checking for pkgconfig libraries'
+           print('\n* Checking for pkgconfig libraries')
            for pc in self.RequiredPkgConfigLibraries():
                if not self.HavePkgConfigLibrary(pc) and pc not in self.ignore: 
                   raise MissingComponent('pkgconfig library', pc)
-        print
+        print()
         rlib = self.RequiredLibraries()
         if len(rlib) > 0: 
-           print '* Checking for libraries:'
+           print('* Checking for libraries:')
            for lib in self.RequiredLibraries():
                if not self.HaveLibrary(lib) and lib not in self.ignore: 
                   raise MissingComponent('library', lib)
-           print
-        print '* Creating makefiles:'
+           print()
+        print('* Creating makefiles:')
         toplevelSubdirs = [d for d in self.directories if d != '.']
         for d in self.directories:
             subdirs = []
             if d != '.' and not os.path.exists(d): os.system('mkdir -p %s' % d)
             if d == '.': subdirs = toplevelSubdirs
             self.CreateMakefile(self.directory[d], subdirs)
-        print '\nEverything seems ready. Now you can compile %s' % self.name
-        print 'with \'make\' and \'make install\' (without quotes)'
+        print('\nEverything seems ready. Now you can compile %s' % self.name)
+        print('with \'make\' and \'make install\' (without quotes)')
 
 class OptionParser(dict):
 
@@ -823,6 +830,6 @@ if __name__ == '__main__':
          sys.stdout.write(ExpandVariables(sys.stdin.read(), dict([x.split('=') for x in opt['expand'].split(',')])))
       elif 'help' in opt: ShowHelp()
       else: SetupHandler('packagesetup', opt).Setup()
-   except Exception, e: 
-      print '\n', e
+   except Exception as e:
+      print('\n', e)
 
