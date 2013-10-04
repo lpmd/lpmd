@@ -1,7 +1,0 @@
-All examples must be running using
-
-lpmd-converter file.control
-
-To visualize the results (lpmd files) we suggest :
-
-lpmd-visualizer -i lpmd:file=output-file.lpmd -u lpvisual:radius=1.5 -r

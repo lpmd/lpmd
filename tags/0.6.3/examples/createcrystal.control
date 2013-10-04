@@ -1,7 +1,0 @@
-
-cell cubic 17.1191
-
-input crystal3d type=fcc symbol=Ar nx=3 ny=3 nz=3
-
-output lpmd file=crystal.lpmd
-

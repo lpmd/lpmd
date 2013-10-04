@@ -1,6 +1,0 @@
-cell cubic a=60.0
-input module=voronoi symbol=Ar type=fcc a=3.61 grains=5
-
-output module=lpmd file=output-box.lpmd extra=rgb
-
-filter box x=all y=all z=0-30

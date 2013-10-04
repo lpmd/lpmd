@@ -1,6 +1,0 @@
-cell cubic a=60.0
-input module=voronoi symbol=Ar type=fcc a=3.61 grains=10
-
-output module=lpmd file=output-cylinder.lpmd extra=rgb
-
-filter cylinder origin=<10,10,10> endpoint=<50,50,50> rmax=10 rmin=3
