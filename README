@@ -1,0 +1,22 @@
+The lpmd package
+================
+
+LPMD is a software used to do molecular dynamics simulations of an atomic dataset.
+
+This package use the main liblpmd API package and plugins to work. To see how
+to install these two packages, please refeer to :
+
+http://www.lpmd.cl/ : Here you will found general information and some binary packages.
+
+http://www.github.com/lpmd/liblpmd : The last API package version.
+http://www.github.com/lpmd/plugins : The last plugins package version.
+
+Installation
+============
+
+Please refeer to the INSTALLATION file.
+
+Use and examples
+================
+
+Somo basic examples can be found in the examples directory. Please check the README file located in examples/README.

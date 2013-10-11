@@ -1,0 +1,61 @@
+INSTALLATION
+============
+
+This document gives a basic overview of the installation procedure. For full
+installation instructions, please see:
+
+   http://www.lpmd.cl/index.php/installation
+
+Requirements
+============
+-- liblpmd (refeer to the liblpmd package)
+-- plugins (refeer to the plugins package)
+-- Python 3.1 or later (python3-all and python3-dev packages).
+-- C compiler (GNU / Intel)
+-- zlib (optional)
+
+Basic Installation
+==================
+These instructions give a very basic overview of how to setup, compile and
+install Open Babel on a Linux machine.  If you are using unique install locations
+and/or libraries are not automatically detected please consult the 'Advanced'
+section.
+
+The following instructions assume that the lpmd source distribution is in
+the directory ~/lpmd-X.Y.Z.
+
+1. Setup the build system. You can specify additional build options
+   at this time (see below):
+
+   ./setup
+
+2. Compile the source code using :
+
+   make all
+
+3. Install:
+
+   sudo make install
+
+
+Advanced
+========
+The build system (setup) provides mechanisms for specifying
+non-standard installation locations and enabling/disabling of optional
+components.
+
+  --prefix : specify the installation prefix
+             (default /usr/local)
+
+  --intel  : Try to locate and use the intel compiler
+             (non used by default)
+
+  --openmp : Add support to OpenMP in the compilation.
+
+For more information please consult the lpmd website:
+
+    http://www.lpmd.cl
+
+Environment Variables
+==================
+Non environment variables are necesary to setup.
