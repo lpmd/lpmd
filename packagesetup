@@ -55,7 +55,7 @@ directory .
 
    binary lpmd-testing
       language = python
-      sources = lpmd.py
+      sources = lpmd_.py
       installpath = bin
    end
 
@@ -65,7 +65,7 @@ directory lphandler
    
    file ControlFile.py
       language = python
-      sources = ControlFile.py
+      sources = ControlFile_.py
       ifdef prefix
        installpath = $(prefix)/lib/lphandler
       else
@@ -75,7 +75,7 @@ directory lphandler
 
    file QuickMode.py
       language = python
-      sources = QuickMode.py
+      sources = QuickMode_.py
       ifdef prefix
        installpath = $(prefix)/lib/lphandler
       else
@@ -85,7 +85,7 @@ directory lphandler
 
    file __init__.py
       language = python
-      sources = __init__.py
+      sources = init_.py
       ifdef prefix
        installpath = $(prefix)/lib/lphandler
       else
