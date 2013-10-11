@@ -315,7 +315,6 @@ class Directory(dict):
         makefile = Makefile()
         if hasattr(self.setup, 'version'): makefile.AddVariable('VERSION', '\"%s\"' % self.setup.version)
         makefile.AddVariable('TARGETS', ' '.join([z for z in self.sortedtargets if not hasattr(self[z], 'test') or not self[z].test]))
-        makefile.AddVariable('CLEANABLE_TARGETS', ' '.join([z for z in self.sortedtargets if (self[z].targettype not in ('script', 'file', 'headers')) and (not hasattr(self[z], 'test') or not self[z].test)]))
         mf += makefile.Render()
         if len(subdirs) > 0:
            makefile = Makefile()
@@ -345,7 +344,7 @@ class Directory(dict):
         mf += '\n'
         ldconfig_libs = []
         for t in self.sortedtargets:
-            if hasattr(self[t], 'installpath') and self[t].targettype != 'script':
+            if hasattr(self[t], 'installpath'):
                realtarget = [ t ]
                if self[t].targettype == 'headers': realtarget = self[t].sources
                elif hasattr(self[t], 'installname'): realtarget = [ self[t].installname ]
@@ -382,13 +381,13 @@ class Directory(dict):
                #
                # Non-compilable targets 
                #
-               mf += ('%s: %s\n' % (t, ' '.join(z for z in dependencies if z != t)))
+               mf += ('%s: %s\n' % (t, ' '.join(dependencies)))
                if hasattr(self[t], 'expand'):
                   varstoexpand = self[t].expand.split()
                   varexpr = ','.join([('%s=%s' % (x, getattr(self.setup, x))) for x in varstoexpand])
                   mf += ('\tcat %s | %s --expand=\"%s\" > %s\n' % (' '.join(dependencies), setuppath, varexpr, t))
-               elif self[t].targettype in ('headers', 'file'): mf += '\n'
-               else:
+               elif self[t].targettype == 'headers': mf += '\n'
+               else: 
                   if len(dependencies) == 1 and dependencies[0] == t: mf += '\n\n'
                   else: mf += ('\tcat %s > %s\n' % (' '.join(dependencies), t))
                if self[t].targettype == 'script': mf += ('\tchmod "u+x" %s\n' % t)
@@ -458,11 +457,11 @@ class Directory(dict):
            else:
               makefile.AddPhonyTarget('check', checktargets, [('- ./'+x) for x in checktargets])
            makefile.AddPhonyTarget('subdirs-clean', [], [('cd %s && $(MAKE) clean' % d) for d in subdirs])
-           makefile.AddPhonyTarget('clean', ['subdirs-clean'], 'rm -f $(CLEANABLE_TARGETS) %s' % (' '.join(cleanables)))
+           makefile.AddPhonyTarget('clean', ['subdirs-clean'], 'rm -f $(TARGETS) %s' % (' '.join(cleanables)))
            makefile.AddPhonyTarget('subdirs-uninstall', [], [('cd %s && $(MAKE) uninstall' % d) for d in subdirs])
         else:
            makefile.AddPhonyTarget('check', checktargets, [('- ./'+x) for x in checktargets])
-           makefile.AddPhonyTarget('clean', [], 'rm -f $(CLEANABLE_TARGETS) %s' % (' '.join(cleanables)))
+           makefile.AddPhonyTarget('clean', [], 'rm -f $(TARGETS) %s' % (' '.join(cleanables)))
         mf += makefile.Render()
         return mf
 
@@ -701,7 +700,7 @@ class SetupHandler:
 
     def HaveExecutable(self, ex): 
         sys.stdout.write('   '+ex+' ')
-        expath = os.popen('PATH=/sbin:$PATH:%s/bin which %s' % (self.prefix, ex), 'r').readline().strip()
+        expath = os.popen('PATH=/sbin:$PATH which %s' % ex, 'r').readline().strip()
         if (expath != ''):
            print('->', expath)
            return os.path.abspath(expath)
