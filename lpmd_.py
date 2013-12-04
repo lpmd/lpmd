@@ -121,7 +121,11 @@ app_name = os.path.basename(sys.argv[0])
 use_hint = {'lpmd': 'apply', 'lpmd-testing': 'apply', 'lpmd-analyzer': 'property', 
             'lpmd-converter': 'apply', 'lpmd-visualizer': 'visualize'}[app_name]
 
-nprocs = LPMD.InitializeCommunication(sys.argv)
+if len(sys.argv) > 1:
+ nprocs = LPMD.InitializeCommunication(sys.argv)
+else :
+ print('need the control-file.')
+ sys.exit("...")
 q, pm = LPMD.QuickMode(use_hint), LPMD.PluginManager([os.path.join(mydir, 'lpmd')])
 
 cell, parameters = None, {'potential': list(), 'monitor': list(), 

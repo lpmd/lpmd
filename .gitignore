@@ -1,3 +1,5 @@
 Makefile
 *.so
 *.o
+*.xyz
+*.dat
