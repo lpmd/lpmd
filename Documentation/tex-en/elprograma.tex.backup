@@ -1,0 +1,141 @@
+\chapter{The LPMD code}
+\label{chap:lpmd}
+
+\section{Founds.}
+
+The {\lpmd} code, start his developed during June in the 2007. This born like
+an idea of implement molecular dynamics in a modular way, trying to be
+user friendly  in the plugins and upgrade developing. the princpal developers
+during the start of the has been: Sergio Davis, Claudia Loyola, Joaqu\'in
+Peralta and Felipe Gonz\'alez, they are all from the \index{GNM}\textit{Grupo de
+NanoMateriales} (\url{http://www.gnm.cl}) group. At this moment more
+colaborators are join to us\footnote{Ver~cap.\ref{chap:auth}}.
+
+The stable versions available of the software are:
+
+\begin{itemize}
+ \item Version 0.6.2 : Released November 1st 2011.
+ \item Version 0.6.1 : Released January 3th 2010.
+ \item Version 0.6.0 : Released June 12th 2009.
+ \item Version 0.5.4 : Released January 1st 29th 2009.
+ \item Version 0.5.3 : Released November 1st 2008.
+ \item Version 0.5.2 : Released August 5th 2008.
+ \item Version 0.5.1 : Released April 30th 2008.
+ \item Version 0.5.0 : Released April 4th 2008.
+ \item Version 0.4.0 : Released July 2007.
+\end{itemize}
+
+The upgrade system is controled by developers. From the 0.5 version of {\lpmd}
+the software have three principal packages.
+
+\begin{itemize}
+\index{liblpmd} \item liblpmd \\
+\index{API}Principal programming \textbf{API} developed by the team. This is
+the core of all characteristics that have {\lpmd}. For a more detailed
+description about this take a look in the apendix section ~\ref{ap:API}.
+\index{lpmd-plugins} \item lpmd-plugins \\
+Is a plugins set that has been developed, and incorporate characteristics from
+the \textbf{API}, usually corresponend to Interatomic Potentials,
+integrators, analyzers, or file managers.
+\index{lpmd} \item lpmd \\
+{\lpmd} Is the molecular dynamics (MD) software that use the plugins and the
+API in order to realize the simulations. This include additional tools
+like \textbf{lpmd-analyzer}, \textbf{lpmd-converter}, \textbf{lpmd-visualizer}
+and in the last version \textbf{lpmd-plotter} that are used for the generation
+of structures, analysis, visualization and image generation of atomic
+configurations.
+\end{itemize}
+
+\section{Principal Goal}
+
+The principal scheme of {\lpmd}, is the use of a control file
+(\verb|file.control|), file that is load directly from the executable
+\verb|lpmd| or other tools.
+
+Consider by an example, a system of MD in that all options, like initial
+temperature, simulation setp number, integrator, interatomic potential, atomic
+positions, etc. are directly specified in a file ``\verb|simulation.control|'',
+so {\lpmd} could be executed directly using, 
+
+\begin{center}
+ \texttt{lpmd simulation.control > simulation.output}
+\end{center}
+\noindent
+
+In this way, {\lpmd} load all the neccesary information located in the file
+\verb|simulation.control| and all output information is saved in the file
+\verb|simulation.output|. Is important note that {\lpmd} even can generate
+additional output file as modules or plugins had been loaded. From the version
+0.6.1 during the {\lpmd} execution, you can see what plugins has been loaded.
+
+\section{Characteristics}
+
+Other characterisitc of {\lpmd} is that this have additional flags for the
+control of the internal variables of a control file. By example, you can run
+many different systems with different temperatures using a single control file.
+Take the next line inside of a control file like as example
+
+\begin{verbatim}
+ ...
+ prepare temperature t=$(TEMP)
+ ...
+\end{verbatim}
+\noindent
+with this, we can run {\lpmd} in order to assign to \verb|TEMP| variable a real
+value, given directly by the command line, for example :
+
+\begin{center}
+ \texttt{lpmd -o TEMP=500 simulation.control > simulation.output}
+\end{center}
+\noindent
+In this way the program start the simulation with a real temperature sistem of
+500K.
+
+The advantage of this characteristic is that we can reduce the difficult of
+generate scripts for different simulations or even consecutive simulations of
+molecular dynamics. By example with only one command we can run a set of
+simulations with different values of a specific variable in a control file. For
+a set of different temperatures, for example:
+
+\begin{center}
+ \texttt{for i in 300 400 500 ; \\do lpmd -o TEMP=\$i simulacion.control > simulacion-\$i.output ; done}
+\end{center}
+\noindent
+This realize three simulations with different initial tempreatures with a
+single control file.
+
+Other interesting flag in {\lpmd}lpmd and their utilities is \verb|-p| that give
+us information about the plugins that you have instaled in your system and that
+are identified directly by {\lpmd}. You can check this using, for example:
+
+\begin{center}
+ \texttt{lpmd -p angdist}
+\end{center}
+\noindent
+in this case \verb|angdist| is a plugin that calculate the angular distribution
+function of a simulation cell. For more option of the executable try the
+\verb|-h| option or \verb|man lpmd|.
+
+\begin{verbatim}
+username@machine:~$lpmd
+.....
+================================================================================
+===================== LPMD VERSION 0.X.Y =======================================
+================================================================================
+LPMD version 0.X.Y
+Using liblpmd version M.N
+
+Usage: lpmd [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>]
+      [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>] [--option | -O
+      <option=value,option=value,...>] [--input | -i plugin:opt1,opt2,...]  
+      [--output | -o plugin:opt1,opt2,...] [--use | -u plugin:opt1,opt2,...] 
+      [--cellmanager | -c plugin:opt1,opt2,...] [--replace-cell | -r] [file.control]
+       lpmd [--pluginhelp | -p <pluginname>]
+       lpmd [--help | -h]
+username@machine:~$ 
+\end{verbatim}
+
+In the next chapters we will give you a more detailed description of other
+characteristics of {\lpmd} and their utilities.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

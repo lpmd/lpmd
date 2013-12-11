@@ -1,0 +1,62 @@
+\chapter{Desarrollando M\'odulos}
+\label{chap:own}
+
+\section{Idea Principal}
+
+Una de las caracter\'isticas princpales de \lpmd con respecto a otros c\'odigos de Din\'amica Molecular es su gran \textit{modularidad} lo que hace que muchas propiedades de un ciclo regular de din\'amica molecular sean modificables facilmentes, por ejemplo un cilco de din\'amica molecular consta de muchas \textbf{piezas} constantes, tales como los potenciales, integradores o bien una propiedad que puede ser calculada de forma instantanea o que requiere una correlaci\'on temporal del sistema.
+
+Consideremos por ejemplo :
+
+Se puede observar claramente que existen \textbf{bloques} en donde la caracter\'istica principal de cada uno de ellos en \lpmd es que son modificables por diferentes tipos de \textbf{m\'odulos} que \textit{encajan} perfectamente en estos bloques, estos m\'odulos pueden ser din\'amicos lo que da una ventaja significativa a la hora de desarrollar el c\'odigo necesario para trabajar con \'el.
+
+En este cap\'itulo se exponen las distintas piezas \textbf{modificables} de \lpmd que har\'an de este un c\'odigo mucho m\'as \'util para el desarrollo de distintas investigaciones con una misma herramienta.
+
+\section{Desarrollando un Potencial}
+
+Una de las piezas fundamentales en la din\'amica molecular, es la integraci\'on de un potencial interat\'omico entre las particulas que componen el sistema, es por eso que \lpmd facilita 
+
+\section{Desarrollando una Propiedad}
+
+Durante una simulaci\'on de din\'amica molecular una de las herramientas m\'as utilizadas  son las propiedades f\'isicas del sistema, las que son, een ocaciones, comparables con resultados experimentales provenientes del laboratorio. Sin embargo estas propiedades, no siempre pueden ser evaluadas ya que los programas no cuentan con ellas, o bien deben implementarse para resolver este problema, aprendiendo a tomar configuraciones de salida de otros programas, para nuestros fines.
+
+Para resolver esta situaci\'on \lpmd calcula propiedades de un sistema atomico, de forma modular, es decir cada uno de nosotros puede \textbf{programar} la propidad que necesesita para su evaluacion, instantanea, o en ocaciones temporal.
+
+\lpmd separa las propiedades de una celda de simulaci\'on en 2 tipos :
+
+\begin{itemize}
+ \item Propiedades Instantaneas.
+ \item Propiedades Temporales.
+\end{itemize}
+
+En donde, las instantaneas corresponden a las propiedades que pueden calcularse en un instante de tiempo y no dependen de configuraciones previas del sistema (como funci\'on de distribuci\'on de pares), en cambio las temporales son aquellas que dependen de configuraciones previas del sistema, por ejemplo la funci\'on de autocorrelaci\'on de velocidades.
+
+A continuaci\'on se mostrar\'a la estructura b\'asica necesaria para implementar propiedades instantaneas y temporales en el programa \lpmd y as\'i utilizarlas durante la ejecuci\'on de \lpmd o bien para trabajar con nuevas utilidades.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Instant\'anea}
+
+Las propiedades m\'as simples para comenzar a implementar son las instantaneas, dentro de este tipo de propiedades tenemos aquellas que retornan por valor un solo n\'umero real (energ\'ia, temperatura, etc.) y otras que retornan una matriz de numeros reales (como g(r) o distribuci\'on angular, etc.), para esto es necesario ubicarse dentro del directorio \verb|lib| de \lpmd y generar dos nuevos archivos que constan con informacion b\'asica de la propiedad.
+
+Consideremos por ejemplo la funci\'on de distribuci\'on de pares (\verb|g(r)|) (\textbf{nota : esto ya existe en el directorio, ac\'a se muestra a modo de ejemplo.}), para ello generamos dos nuevos ficheros dentro de \verb|lib| :
+
+\begin{center}
+ \verb|touch gdr.cc gdr.h|
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Temporal}
+
+Las propiedades temporales n est\'an dise\~nadas para ser evaluadas duratne a siulaci\'on, sin embargo es facil su implementacion en la API, lo que puede llevar a utilziarlas en otros c\'odigos, tales como fumody.
+
+La idea es utilizar los archivos de configuraci\'on de salida de lpmd.
+
+\section{Desarrollando Integrador}
+
+Un integrador cumple la funcion de ...
+
+\section{Desarrollando Utilidades}
+
+La API (liblpmd) es la principal herramienta que deja lpmd, que puede ser utilizada no solo por \'el sino que por utilidades que nosotros deseamos dise\~nar.
+

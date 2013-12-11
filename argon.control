@@ -1,7 +1,8 @@
 
 cell cubic 57.036
-input module=fcc symbol=Ar nx=10 ny=10 nz=10 a=5.7036
-output module=xyz file=output.xyz each=10 start=0 end=-1
+#input module=fcc symbol=Ar nx=10 ny=10 nz=10 a=5.7036
+input module=xyz file=output.xyz
+output module=xyz file=output2.xyz each=10 start=0 end=-1
 
 monitor step,total-energy,temperature start=0 end=-1 each=10
 

@@ -1,0 +1,260 @@
+\chapter{Utilidades Derivadas de \lpmd}
+\label{chap:utilidades}
+
+A continuaci\'on veremos algunos utilitarios derivados de la implementaci\'on de {\lpmd}, estos surgen gracias a la \textit{reutilizaci\'on} de los c\'odigos, para no s\'olo realizar din\'amica molecular, sino que an\'alisis, conversiones, visualizaciones, etc.
+
+En este cap\'itulo usted encontrar\'a una descripci\'on general de cada uno de los utilitarios, sin embargo podr\'a encontrar ejemplos mucho m\'as espec\'ificos en el cap\'itulo~\ref{chap:exa}. O tambi\'en en la p\'agina web oficial de {\lpmd}.
+
+\section{\index{lpmd-analyzer}lpmd-analyzer}
+
+Al igual que {\lpmd}, \verb|lpmd-analyzer| puede utilizar un fichero de control o bien directamente l\'inea de comandos, basado en los mismos plugins, pero a diferencia de {\lpmd}, \textbf{lpmd-analyzer} no necesita todos los requerimientos de una din\'amica molecular, por lo que su fichero de control es m\'as corto, \'este s\'olo requiere las propiedades que se desean calcular, asi como tambi\'en la especificaci\'on del sistema y como se llevar\'a a cabo la evaluaci\'on.
+
+Los an\'alisis son hechos generalmente, sobre ficheros de salida de simulaciones computacionales, tales como \verb|xyz|, \verb|lpmd|, \verb|dlpoly| (ficheros \verb|HISTORY| o \verb|CONFIG|) o cualquiera de los listados en la tabla~\ref{tab:modinout}.
+
+\subsection{An\'alisis utilizando un Fichero de Control}
+Ahora listamos cada una de las \'areas principales de un fichero de control para ejcutarlo con \textbf{lpmd-analyzer}.
+
+\begin{enumerate}
+ \item Propiedades de la Celda.
+ \item Carga de m\'odulos de an\'alisis.
+ \item Forma de an\'alisis, o llamado a m\'odulos.
+\end{enumerate}
+
+\subsubsection{Propiedades de la Celda}
+Se especifican las caracter\'isticas de la celda de simulaci\'on del fichero que posee las configuraciones at\'omicas. Pueden ser en ocaciones entregados como argumentos de ejecuci\'on del comando \textbf{lpmd-analyzer}, como veremos en el \textbf{quick-mode}.
+
+Los principales campos que deber\'ian estar en esta secci\'on del fichero son:
+\begin{itemize}
+ \item cell : Caracter\'isticas generales de la celda.
+ \item input : Para cargar el fichero de entrada.
+ \item prepare : Alguna modificaci\'on a la celda original, tales como las replicas.
+\end{itemize}
+\subsubsection{Carga de m\'odulos}
+En esta secci\'on del fichero especificamos las propiedades que deseamos calcular, pueden ser tanto est\'aticas como din\'amicas, podemos calcular multiples propiedades en una sola ejecuci\'on, asi como tambien una misma propiedad con distintos par\'ametros.
+
+En este caso, lo importante es cargar cada m\'odulo evaluador de propiedades con:
+
+\control{use module as alias \\ ... \\enduse}
+\subsubsection{Llamado a m\'odulos}
+Al igual que en {\lpmd}, el llamado a m\'odulos de propiedades, se realiza con la orden:
+
+\control{property alias start=0 end=1000 each=10}
+
+Por ejemplo, en este caso, un fichero con mas de 1000 configuraciones, es caracterizado en sus primeras 1000 configuraciones y la evaluaci\'on de esta propiedad se realiza cada 10 pasos.
+
+Veamos a continuaci\'on una idea general de un fichero de control de \verb|lpmd-analyzer|, m\'as ejemplos sobre su uso se pueden encontrar ena la secci\'on~\ref{chap:exa}.
+
+\fb{ 
+\texttt{
+\begin{tabular}{lcl}
+ \#Cell Properties & $\rightarrow$ & Propiedades de la celda.\\
+ cell ... &&\\
+ \#Input & $\rightarrow$ & Principal fichero de entrada\\
+ input ... &&\\
+ \#General & $\rightarrow$ & Setting generales sobre el fichero, replicar, etc.\\
+ prepare ... &&\\
+ \#Filters & $\rightarrow$ & Filtros a aplicar sobre la muestra.\\
+ filter ... &&\\
+ \#Module Load & $\rightarrow$ & Carga de todos los modulos de propiedades a analisar.\\
+ use ... &&\\
+ enduse ... &&\\
+ \#Module Apply & $\rightarrow$ & Indica como son aplicados los modulos.\\
+ properties ... &&\\
+\end{tabular}
+}
+}
+
+\subsection{An\'alisis utilizando el quick-mode}
+
+Usualmente uno espera que las utilidades sean de \textit{f\'acil acceso} por lo que escribir tediosos ficheros de configuraci\'on no es lo esperado, por eso tanto {\lpmd} como su set de utilidades tienen el llamado \textbf{quick-mode} que \'es simplementa la ejecuci\'on directa de an\'alisis, conversiones o visualizaciones de salidas de din\'amica molecular.
+
+Veamos a continuaci\'on lo que hay en una ejecuci\'on simple de \verb|lpmd-analyzer|.
+
+\begin{verbatim}
+username@machine:~$lpmd-analyzer
+
+LPMD Analyzer, version 0.6.1pre
+
+LPMD Analyzer version 0.6.1pre
+Using liblpmd version 2.0.0
+
+Usage: lpmd-analyzer [--verbose | -v ] [--lengths | -L <a,b,c>]
+       [--angles | -A <alpha,beta,gamma>] [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] 
+       [--scale | -S <value>] [--option | -O <option=value,option=value,...>] 
+       [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...] 
+       [--use | -u plugin:opt1,opt2,...] [--cellmanager | -c plugin:opt1,opt2,...] 
+       [--replace-cell | -r] [file.control]
+       lpmd-analyzer [--pluginhelp | -p <pluginname>]
+       lpmd-analyzer [--help | -h]
+
+username@machine:~$ 
+\end{verbatim}
+
+Podemos ver entonces la gran cantidad de opciones con que dispone \verb|lpmd-analyzer|. Es decir, \textit{no tenemos necesidad} de crear ficheros de control para realizar an\'alisis sobre el sistema.
+
+Consideremos que tenemos un fichero \verb|HISTORY| de una simulaci\'on realizada con DL\_POLY y deseamos evaluar por ejemplo el numero de coordinaci\'on de los \'atomos de la simulaci\'on y deseamos usar para eso el plugin \verb|cordnum|. Podemos ver todo lo que \textbf{requiere el plugin} utilizando el comando \verb|lpmd -p cordnum|.
+
+\begin{verbatim}
+ username@machine:~$lpmd-analyzer -p gdr
+ ......
+ General Options   >>                                                          
+      bins          : Especifica el numero de divisiones entre 0 y rcut.       
+      rcut          : Especifica el radio maximo para el calculo de gdr.       
+      output        : Fichero en el que se graba el RDF.                       
+      average       : Setea si calculo o no el promedio de cada calculo.       
+ .........
+\end{verbatim}
+
+Entonces por ejemplo podemos calcular directamene el n\'umero de coordinaci\'on sin la necesidad de un fichero de control utilizando :
+
+\begin{verbatim}
+ lpmd-analyzer -i dlpoly:file=HISTORY,ftype=HISTORY -u gdr:output=gdr.dat//
+ ,bins=100,rcut=10,average=true,start=1,end=-1,each=5 -r
+\end{verbatim}
+
+Vemos entonces un calculo de la \textit{Funci\'on de distribuci\'on de pares} para un fichero \verb|HISTORY| directamente en l\'inea de comandos, note que tambi\'en es posible indicar a que configuraciones se les puede calcular.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\index{lpmd-converter}lpmd-converter}
+
+Utlizado para conversi\'on de celdas entre distintos formatos, pese a que ya existen software que convierten entre distintos formatos de manera f\'acil y eficiente (ej: \verb|babel|), \verb|lpmd-converter| cuenta con algunas funcionalidades extras que son independientes de cada tipo de m\'odulo. Entre sus ventajas destacan el hecho de hacer filtrados, asignar colores a los \'atomos seleccionar o invertir selecciones, replicar la celda, generar configuraciones complejas de forma f\'acil, etc.
+
+Al igual que todos los utilitarios de {\lpmd}, \verb|lpmd-converter| trabaja con dos modos principales, utilizando ficheros de control o bien en l\'inea de comandos. Veremos a continuaci\'on a grosso modo cada una de ellas.
+
+\subsection{lpmd-converter utilizando un Fichero de Control}
+Las \'areas principales de un fichero de control para ejecutar con \textbf{lpmd-converter}, son:
+
+\begin{enumerate}
+ \item Propiedades de la Celda.
+ \item Carga de fichero de entrada.
+ \item Filtros o caracter\'isticas especiales
+ \item Fichero de salida.
+\end{enumerate}
+
+\subsubsection{Propiedades de la Celda}
+Se especifican las caracter\'isticas de la celda de simulaci\'on del fichero que posee las configuraciones at\'omicas. en ocaciones esta informaci\'on ya viene en el archivo de entrada principal por lo que no es necesario entregarla.
+
+Los principales campos que deber\'ian estar en esta secci\'on del fichero son:
+\begin{itemize}
+ \item cell : Caracter\'isticas generales de la celda.
+\end{itemize}
+
+\subsubsection{Carga de fichero de entrada}
+Especificamos claramente el fichero inicial o de entrada, el que corresponde al que queremos \textit{convertir} a un formato distinto, en esta secci\'on la orden m\'as importante es:
+
+\control{input module=... file=...}
+
+\subsubsection{Filtros o Caracter\'isticas especiales}
+En general casi cualquier caracter\'istica puede ser asignada a la celda, siempre y cuanto esta tengo alg\'un sentido en la aplicaci\'on, por ejemplo podemos hacer uso de replicar la celda en distintas direcciones. Adem\'as podemos usar los filtros disponibles para seleccionar regiones especiales del espacio que podemos necesitar.
+
+\control{prepare replicate 2 2 2}
+\control{filter sphere radius=5 center=<10,10,10>}
+
+Con eso entonces replicamos la celda y luego seleccionamos una esfera centrada en \verb|<10,10,10>| con radio de 5, es decir todos los otros \'atomos del sistema son eliminados.
+
+\subsubsection{Ficheros de salida}
+En esta secci\'on podemos especificar uno o m\'as ficheros de salida para realizar la transformaci\'on de nuestra celda inicial. La orden, de modo similar a {\lpmd}, es dada por la palabra clave \verb|output|.
+
+\control{output module=... file=... }
+
+\subsection{Utilizando lpmd-converter con quick-mode}
+Por ahora, \textbf{lpmd-converter} puede manejar todos los formatos listados en la tabla~\ref{tab:modinout}. Adem\'as se pueden aplicar filtros sobre las configuraciones, para modificar, extraer o a\~nadir \'atomos en el sistema. Veamos una salida t\'ipica de \verb|lpmd-converter|,
+
+\begin{verbatim}
+username@machine:~$lpmd-converter
+ LPMD Converter, version 0.6.1pre
+
+LPMD Converter version 0.6.1pre
+Using liblpmd version 2.0.0
+
+Usage: lpmd-converter [--verbose | -v ] [--lengths | -L <a,b,c>] [--angles | -A <alpha,beta,gamma>] [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>] [--option | -O <option=value,option=value,...>] [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...] [--use | -u plugin:opt1,opt2,...] [--cellmanager | -c plugin:opt1,opt2,...] [--replace-cell | -r] [file.control]
+       lpmd-converter [--pluginhelp | -p <pluginname>]
+       lpmd-converter [--help | -h]
+username@machine:~$
+\end{verbatim}
+
+Vemos entonces que la mayor\'ia de las opciones son similares todas las utilidades de lpmd, consideremos un par de ejemplos sencillos, por ejemplo convertir r\'apidamente, sin la necesidad de escribir un archivo de control, un fichero lpmd a xyz:
+
+\begin{verbatim}
+ lpmd-converter -i lpmd:file=fichero.lpmd -o xyz:file=new.xyz -r
+\end{verbatim}
+
+\noindent
+listo, ya hemos convertido el fichero \verb|lpmd| a un fichero de tipo \verb|xyz|.
+
+Adem\'as podemos replicar una celda por ejemplo con :
+
+\begin{verbatim}
+ lpmd-converter -i xyz:file=original.xyz -o xyz:new.xyz -L 15,15,15 -u replicate:nx=2,ny=2,nz=2
+\end{verbatim}
+
+Note que el tamaño de la celda debe ser entregado en el comando, ya que los ficheros de tipo \verb|xyz| no guardan informaci\'on sobre la estructura de la celda. M\'as ejemplos de c\'omo utilizar \verb|lpmd-converter| se pueden encontrar en el cap\'itulo~\ref{chap:exa}.
+
+\section{\index{lpmd-visualizer}lpmd-visualizer}\label{sec:lpmd-visualizer}
+Utilidad capaz de visualizar sistemas at\'omicos, su funci\'on es aplicar cualquier tipo de m\'odulo de visualizaci\'on del sistema. Por ejemplo visualizaci\'on de las posiciones at\'omicas en la terminal (\verb|printatoms|), as\'i como la observaci\'on directa de configuraciones at\'omicas mediante openGL (\verb|lpvisual|). 
+
+Es importante \textbf{remarcar} la diferencia entre \verb|lpmd-visualizer| y \verb|lpvisual|, en general \verb|lpmd-visualizer| es una utilidad capaz de utilizar cualquier \textit{plugin visualizador} y no necesariamente estos implican im\'agenes del sistema configuracional, tambi\'en puede ser informaci\'on \verb|textual| sobre las configuraciones. Sin embargo en la mayor\'ia de los casos, la intenci\'on principal de \verb|lpmd-visualizer| est\'a directamente relacionada al plugin \verb|lpvisual| que tiene un gran soporte y detalle de visualizaci\'on en OpenGL.
+
+\subsection{Utilizando lpmd-visualizer con un Fichero de Control}
+
+Las \'areas principales de un fichero de control para ejcutar con \textbf{lpmd-converter}, son:
+
+\begin{enumerate}
+ \item Propiedades de la Celda.
+ \item Carga de modulos de visualizaci\'on.
+ \item Llamado de los m\'odulos.
+\end{enumerate}
+
+\subsubsection{Propiedades de la Celda}
+Se especifican las caracter\'isticas de la celda de simulaci\'on del fichero que posee las configuraciones at\'omicas.
+
+Los principales campos que deber\'ian estar en esta secci\'on del fichero son:
+\begin{itemize}
+ \item cell : Caracter\'isticas generales de la celda.
+ \item input : Especificando el fichero de entrada.
+ \item prepare : Alguna modificaci\'on a la celda original, tales como las replicas o filtros.
+\end{itemize}
+
+\subsubsection{Carga de m\'odulo de visualizaci\'on}
+En esta secci\'on podemos cargar l m\'odulo de visualizai\'on que se desee utilizar, generalmente es lpvisual, pero como ya se mencion\'o puede ser cualquier m\'odulo visualizador.
+
+\control{use lpvisual as module-alias\\ ... \\enduse}
+
+\subsubsection{Llamado al m\'odulo}
+Especificamente llamamos al m\'odulo y vemos como deseamos mostrar la imagen o generar informaci\'on:
+
+\control{visualize module-alias start=0 end=1000 each=20}
+
+Por ejemplo, en este caso, un fichero con mas de 1000 configuraciones, se muestra cada 20 pasos comenzando en el paso inicial y terminando en el paso 1000.
+
+\subsection{Utilizando lpmd-visualizer con quick-mode}
+Poder generar ficheros para visualizaci\'ones grandes y complejas, asi como tambien una visualizaci\'on simple y directa. Una de las primeras utilidades que nos brindo \verb|lpmd-visualizer| es poder observar (apoyados por el m\'odulo \verb|lpvisual|) los ficheros de tipo \verb|lpmd| o \verb|zlp|. Veamos ahora como observar un fichero de estos de manera r\'apida utilziando el \verb|quick-mode|.
+
+El llamado sin argumentos del comando \verb|lpmd-visualizer| nos da ayuda general de las opciones que \'este permite :
+
+\begin{verbatim}
+username@machine:~$lpmd-visualizer
+ LPMD Visualizer, version 0.6.1pre
+
+LPMD Visualizer version 0.6.1pre
+Using liblpmd version 2.0.0
+
+Usage: lpmd-visualizer [--verbose | -v ] [--lengths | -L <a,b,c>]
+                       [--angles | -A <alpha,beta,gamma>]
+                       [--vector | -V <ax,ay,az,bx,by,bz,cx,cy,cz>] [--scale | -S <value>]
+                       [--option | -O <option=value,option=value,...>]
+                       [--input | -i plugin:opt1,opt2,...] [--output | -o plugin:opt1,opt2,...]
+                       [--use | -u plugin:opt1,opt2,...]
+                       [--cellmanager | -c plugin:opt1,opt2,...]
+                       [--replace-cell | -r] [file.control]
+       lpmd-visualizer [--pluginhelp | -p <pluginname>]
+       lpmd-visualizer [--help | -h]
+username@machine:~$lpmd-visualizer
+\end{verbatim}
+
+Entonces podemos visualizar una configuraci\'on en formato \verb|lpmd| utilizando el comando
+
+\control{lpmd-visualizer -i lpmd:file=fichero.lpmd -u lpvisual -r}
+
+Para m\'as ejemplos del uso de \verb|lpmd-visualizer| refierase al cap\'itulo~\ref{chap:exa}.

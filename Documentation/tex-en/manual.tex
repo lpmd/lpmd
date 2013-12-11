@@ -1,0 +1,142 @@
+\documentclass[a4paper,10pt]{scrbook}
+
+\usepackage{graphicx,fancybox,wrapfig}
+\usepackage{fullpage,multicol}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{subfigure}
+\usepackage{rotating}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+%\usepackage[spanish]{babel}
+\usepackage{color} %color letters
+\usepackage{makeidx} %makes an index (you must use "makeindex" program first)
+\usepackage[left=2.2cm,right=1.7cm,top=1cm,bottom=3.5cm]{geometry} % Specify page margins
+\usepackage{fancyhdr} % Headers and Footers.
+\usepackage{hyperref} %internal links
+\usepackage{longtable}
+\hypersetup % Setting hyperref options
+{
+ colorlinks=true,
+ urlcolor=blue
+}
+\makeindex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%NEWCOMMANDS DEFINITIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\lpmd{{\tt lpmd}}
+\def\bs{\boldsymbol}
+\newcommand{\fumfun}[4]{\begin{center}\begin{tabular}{|c|c|c|c|}\hline
+ Flag & Work & Test & Mand\\\hline
+#1 & #2 & #3 & #4 \\\hline
+\end{tabular}
+\end{center}}
+\newcommand{\D}[2]{\frac{\partial #2}{\partial #1}}
+\newcommand{\DD}[2]{\frac{\partial^2 #2}{\partial #1^2}}
+\newcommand{\DC}[2]{\frac{D #2}{D #1}} %derivada conectiva.
+\newcommand{\fb}[1]{\begin{center}\framebox[1.1\width]{#1}\end{center}}
+\newcommand{\cajatx}[1]{\begin{center}\setlength{\fboxsep}{0.2cm}\fbox{\parbox[l]{10cm}{#1}}\end{center}}
+%\newcommand{\cvb}[1]{\begin{center}\begin{verbatim} #1 \end{verbatim}\end{center}}
+\newcommand{\cajaeq}[1]{\begin{center}\setlength{\fboxsep}{0.1cm}\fbox{\parbox[b]{10cm}{#1}}\end{center}}
+%\newcommand{\cajafi}[3]{\begin{figure}\centering\shadowbox{\begin{minipage}{3.5 in}\centering\includegraphics[scale=.3]{#1}\caption{#2}\label{fig:#3}\end{minipage}}\end{figure}}
+\newcommand{\cajafi}[3]{\begin{figure}[h!]\centering\includegraphics[scale=.35]{#1}\caption{#2}\label{fig:#3}\end{figure}}
+%\newcommand{\control}[1]{\begin{center}\begin{minipage}{10cm}\texttt{#1}\end{minipage}\end{center}}
+\newcommand{\control}[1]
+{
+\begin{center}\tt
+\begin{tabular}{l}
+#1
+\end{tabular}
+\end{center}
+}
+
+\newcommand {\foto}[4]{\begin{figure}
+%   \begin{framed}
+      \begin{center}
+      \includegraphics[scale=#2]{#1}
+      \end{center}
+
+      \caption{\emph{#3}}
+
+      \label{#4}
+%   \end{framed}
+   \end{figure}
+   }
+%--------------------------------- PAGE STYLE ----------------------------------%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagestyle{fancy}                                                               %
+\fancyhf{}                                                                      %
+\fancyhead[LE]{{\bf\thepage}\qquad{\color[rgb]{0.094,.4,0}\small\leftmark}}     %
+\fancyhead[RE,LO]{\scriptsize\sl\rightmark}                                     %
+\fancyhead[RO]{{\color[rgb]{0.094,.4,0}\small\leftmark }\qquad{\bf\thepage}}	%
+\fancyfoot[C]{\thepage}                                                         %
+\fancypagestyle{plain}                                                          %
+{                                                                               %
+ \fancyhf{}                                                                     %
+ \fancyfoot[C]{\thepage}                                                        %
+ \renewcommand{\headrulewidth}{0mm}                                             %
+}                                                                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\headrulewidth}{.3mm}
+\renewcommand{\indexname}{\'Indice Alfab\'etico}
+\renewcommand{\contentsname}{Contenidos}
+\headsep 0.3in
+
+\begin{document}
+\author{\includegraphics[scale=.35]{logo-lpmd.pdf}}
+\title{``Las Palmeras'' Molecular Dynamics - \textbf{LPMD}.}
+\maketitle
+
+
+\chapter*{Acknowledgements}
+
+We thank the ``Proyecto Anillo ACT/24, Chile''for the constant financial
+support has provided our team, which has made possible the peaceful realization
+of our projects in the short and long term, because with it we could get
+top-quality equipment carrying out our tasks. We also thank the doctors in
+Physics, our mentors and friends, Gonzalo Gutiérrez, Eduardo Menendez and Carlos
+Esparza, for all the advice and suggestions they made and continue to make to
+our project, and that his desire to carry out this program was a the main
+motivations for moving forward and constantly improve it.
+
+\vfill
+\begin{center}
+\begin{figure}[!hbt]\centering
+\includegraphics[height=3cm]{gnm.jpg}\hskip2cm
+\includegraphics[height=1.5cm]{conicyt.jpg}
+\includegraphics[height=1.5cm]{gob-chile.jpeg}
+\end{figure}
+\end{center}
+\begin{flushright}
+ This work has been realized, thank to the support of\\
+ Proyecto Anillo ACT/24
+\end{flushright}
+
+
+
+\newpage\pagestyle{empty}\tableofcontents\newpage
+\pagestyle{fancy}
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%% THE CHAPTERS %%%%%%%%%%%%%%%%%%%%
+\input{elprograma.tex}                              % 1er Capítulo
+\input{instalacion.tex}                             % 2do Capítulo
+\input{fichentrada.tex}                             % 3er Capítulo
+\input{modulos.tex}                                 % 4o Capítulo
+\input{utilidades.tex}                              % 5o Capítulo
+\input{lpvisual.tex}                                % 6o Capítulo
+\input{ejemplos.tex}                                % 7o Capítulo
+%\input{desmodulos.tex}                             % 8o Capítulo
+%\input{paralelizacion.tex}                         % 9o Capítulo
+\input{gente.tex}                                   % 10o Capítulo
+\input{apendice.tex}                                % 11o Capítulo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\printindex
+
+\end{document}
+
