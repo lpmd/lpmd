@@ -2,5 +2,17 @@ Makefile
 *.so
 *.s
 *.so.*
+*.a
+*.o
+__init__.py
+config.h
+lpmd
+lpmd-analyzer
+lpmd-converter
+lpmd-plotter
+lpmd-visualizer
+makeframes.py
+parselpmd2.py
+povscene.py
 lphandler/
 lpmd-testing
