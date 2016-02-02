@@ -3,3 +3,7 @@ Makefile
 *.o
 *.xyz
 *.dat
+lphandler/ControlFile.py
+lphandler/QuickMode.py
+lphandler/__init__.py
+lpmd-testing
