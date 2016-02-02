@@ -2,3 +2,5 @@ Makefile
 *.so
 *.s
 *.so.*
+lphandler/
+lpmd-testing
