@@ -31,7 +31,7 @@ void PrintPalmTree()
  cout << "/-----------------------------------------------------------------------------\\" << '\n';
  cout << "|     L A S     P A L M E R A S     M O L E C U L A R   D Y N A M I C S        |" << '\n';
  cout << "|------------------------------------------------------------------------------|" << '\n';
- cout << "|     Copyright (c) 2007-2009  Grupo de Nanomateriales, http://www.gnm.cl      |" << '\n';
+ cout << "|     Copyright (c) 2007-2017  Grupo de Nanomateriales, http://www.gnm.cl      |" << '\n';
  cout << "`------------------------------------------------------------------------------'" << '\n';
  cout << "\n";
 }

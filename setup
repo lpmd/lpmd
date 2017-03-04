@@ -7,7 +7,7 @@ from copy import deepcopy
 # Syntax and definitions
 #
 defaultPrefix = '/usr/local'
-defaultInstall = 'install'
+defaultInstall = 'ginstall'
 pythonlib = [x for x in sys.path if 'python%d.%d' % (sys.version_info[0:2]) in x and 'pymodules' not in x][0]
 
 defaultLanguages = ['c', 'c++', 'd', 'python', 'lpunit']
@@ -351,11 +351,11 @@ class Directory(dict):
                   uninstall_files.append(os.path.join(self[t].installpath, rt))
                if hasattr(self[t], 'installname') and self[t].installname != t:
                   # INSTALL: alternative name installation
-                  mf += ('\t%s %s %s\n' % ('cp -vd', t, self[t].installpath))
+                  mf += ('\t%s %s %s\n' % ('cp -a', t, self[t].installpath))
                   uninstall_files.append(os.path.join(self[t].installpath, t))
                if hasattr(self[t], 'semiinstallname') and self[t].semiinstallname != t:
                   # INSTALL: alternative name installation
-                  mf += ('\t%s %s %s\n' % ('cp -vd', self[t].semiinstallname, self[t].installpath))
+                  mf += ('\t%s %s %s\n' % ('cp -a', self[t].semiinstallname, self[t].installpath))
                   uninstall_files.append(os.path.join(self[t].installpath, self[t].semiinstallname))
                if self[t].targettype == 'library' and self[t].installpath not in ldconfig_libs:
                   ldconfig_libs.append(self[t].installpath)

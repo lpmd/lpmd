@@ -272,23 +272,23 @@ class Scene:
       f.write(self.povCode)
       f.close()
 
-  def Render(self, outfile,op , format="ppm", display=False, size=(320, 240), antialias=False):
-      self.ExportPOV("modeltmp.pov")
+  def Render(self, outfile, inpfile, op , format="ppm", display=False, size=(320, 240), antialias=False):
       fcode = ""
       if format == "ppm": fcode = "+FP"
       elif format == "png": fcode = "+FN"
       elif format == "tga": fcode = "+FT"
       elif format == "ctga": fcode = "+FC"
       else: fcode = ""
-      command = "povray %s +Imodeltmp.pov +O%s " % (fcode, outfile)
-      command += "+L/usr/share/povray-3.5/include +W%d +H%d " % (size[0], size[1])
+      command = "povray %s +I%s +O%s " % (fcode, inpfile, outfile)
+      command += " +W%d +H%d " % (size[0], size[1])
       if antialias: command += "Antialias=%s " % op['antialias']['value']
       if display: command += "Display=True 2> /dev/null "
       else: command += "Display=False 2> /dev/null"
+      print ("Executing : %s" , command)
       os.system(command)
       if ("logo" in op):
        command = "convert %s -fill black -stroke black -pointsize 20 -gravity %s -annotate 0 '%s' tmp.png" % (outfile, op['logo']['type'], op['logo']['expression='])
        os.system(command)
        command = "mv tmp.png %s" % outfile
        os.system(command)
-      os.system("rm modeltmp.pov")
+#  os.system("rm modeltmp.pov")
