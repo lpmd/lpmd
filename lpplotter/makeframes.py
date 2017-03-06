@@ -54,6 +54,10 @@ def render(lp, c):
     LX = norma(lp.cell[0]) 
     LY = norma(lp.cell[1])
     LZ = norma(lp.cell[2])
+    V1 = lp.cell[0]
+    V2 = lp.cell[1]
+    V3 = lp.cell[2]
+
     scene = Scene()
 
     #Start to rotate
@@ -178,9 +182,12 @@ def render(lp, c):
     print "Number of atoms in scene ", c, " is ", len(lp)
     for atom in range(len(lp)):
         (x, y, z) = lp.PackTags(('X','Y','Z'), atom)
-        x = x*LX
-        y = y*LY
-        z = z*LZ
+	tmpx = x
+	tmpy = y
+        tmpz = z
+        x = tmpx*V1[0]+tmpy*V2[0]+tmpz*V3[0]
+        y = tmpx*V1[1]+tmpy*V2[1]+tmpz*V3[1]
+        z = tmpx*V1[2]+tmpy*V2[2]+tmpz*V3[2]
         radius = float(option['radius']['value'])
         sphere = Sphere((x, y, z), radius)
         if ('rgb' in lp.tags):
@@ -205,10 +212,13 @@ def render(lp, c):
     else:
      fmt = "movie%.4d"
     ffmt = fmt % (c) + ".png"
+    pfmt = fmt % (c) + ".pov"
+    print "Generating povfile %s" % (pfmt)
+    scene.ExportPOV(pfmt)
     print "Rendering %s..." % (ffmt)
+    scene.Render(ffmt, pfmt, format="png", size=sizes, antialias=True, op=option)
     if ("povfiles" in option):
-     if(option['povfiles']['value']=="keep"): scene.ExportPOV("movie%.4d.pov" % c)
-    scene.Render(ffmt, format="png", size=sizes, antialias=True, op=option)
+     if(option['povfiles']['value']!="keep"): system("rm -f %s" % (ffmt))
 
 
 def newrender(lp):
