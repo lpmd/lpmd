@@ -4,6 +4,7 @@ Makefile
 *.so.*
 *.a
 *.o
+*.swp
 __init__.py
 config.h
 lpmd
