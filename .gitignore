@@ -3,7 +3,14 @@ Makefile
 *.o
 *.xyz
 *.dat
+*.swp
 lphandler/ControlFile.py
 lphandler/QuickMode.py
 lphandler/__init__.py
 lpmd-testing
+liblpmdutility.a
+lpmd
+lpmd-*
+makeframes.py
+parselpmd2.py
+povscene.py

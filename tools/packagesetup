@@ -1,0 +1,36 @@
+#
+#
+#
+
+name = psofit
+fullname = 'PSO Fit'
+version = 0.1
+author = 'GNM <gnm@gnm.cl>'
+prefix = /usr/local
+
+language c++
+   compiler = mpiCC
+   linker = mpiCC 
+   flags = -g -Wall -O3 
+end
+
+directory .
+
+    binary pso_fit
+       language = c++
+       sources = pso_fit.cc 
+       pkgconfig += liblpmd-2.0
+       libraries += -llpmd -ldl
+    end
+
+    binary pso_fit_serial
+       language = c++
+       compiler = g++
+       linker = g++
+       sources = pso_fit_serial.cc 
+       pkgconfig += liblpmd-2.0
+       libraries += -llpmd -ldl
+    end
+
+end
+
