@@ -8,8 +8,13 @@ Overview
 This is an external utility for lpmd, the goal is generate high-quiality render images
 from a standard input file in lpmd format.
 
-The intention is use lpvisual in order to determine the perpective and initial settings
-for use lpmd-plotter.
+The intention is use lpvisual in order to determine the perpective and initial settings,
+after that we use that information in at lpmd-plotter.
+
+IMPORANT NOTE : Sometimes the position of the camera, in the case of orthographic camera, 
+should be changed by hand. We recommend displace in larger values the axis related to the 
+view direction. For example, if camerapos is (1,1,1), we recommend try (1,1,10) if the
+direction view is mostly in the Z axis.
 
 Requirements
 ============
@@ -45,7 +50,7 @@ Mandatory Options
 * cameraUp : Rotation of the camera. Taken this value from lpvisual.
              Example : cameraUp <-0.005,0.001,0.999>
 
-* camera : Define the type of camera, could be perspective or orthorombic.
+* camera : Define the type of camera, could be perspective or orthographic.
            Example : camera perspective
 
 * size : Size of the screen. Take this value from lpvisual.
