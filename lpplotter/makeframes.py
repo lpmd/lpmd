@@ -218,7 +218,7 @@ def render(lp, c):
     print "Rendering %s..." % (ffmt)
     scene.Render(ffmt, pfmt, format="png", size=sizes, antialias=True, op=option)
     if ("povfiles" in option):
-     if(option['povfiles']['value']!="keep"): system("rm -f %s" % (ffmt))
+     if(option['povfiles']['value']!="keep"): system("rm -f %s" % (pfmt))
 
 
 def newrender(lp):
