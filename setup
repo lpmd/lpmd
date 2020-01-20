@@ -7,7 +7,7 @@ from copy import deepcopy
 # Syntax and definitions
 #
 defaultPrefix = '/usr/local'
-defaultInstall = 'ginstall'
+defaultInstall = 'install'
 pythonlib = [x for x in sys.path if 'python%d.%d' % (sys.version_info[0:2]) in x and 'pymodules' not in x][0]
 
 defaultLanguages = ['c', 'c++', 'd', 'python', 'lpunit']
